@@ -1,0 +1,9 @@
+# अगर यह फोल्डर public_html के अंदर है तो संवेदनशील फाइलें छिपाइए।
+# सबसे अच्छा तरीक़ा फिर भी यही है कि फोल्डर public_html के बाहर रखा जाए।
+<FilesMatch "\.(sql|md|log)$">
+  Require all denied
+</FilesMatch>
+<Files "config.php">
+  Require all denied
+</Files>
+Options -Indexes

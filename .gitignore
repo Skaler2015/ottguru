@@ -1,0 +1,6 @@
+# कभी commit न करें — इसमें DB पासवर्ड और API key है
+config.php
+
+logs/*.log
+.DS_Store
+*.swp
