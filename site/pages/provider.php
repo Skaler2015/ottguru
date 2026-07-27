@@ -72,6 +72,33 @@ $naya = all($PDO, "
      LIMIT 12",
     [(int) $prov['id'], $country]);
 
+// ---- भाषा के हिसाब से लिंक — सिर्फ़ वे जोड़ जिन पर सच में titles हैं --------------
+// (5 से कम वाले पेज noindex हैं, पर यूज़र के लिए लिंक 1 से ही दिखा देते हैं)
+$bhasha_links = [];
+foreach (all($PDO, "
+    SELECT l.lang_code, t.media_type, COUNT(DISTINCT t.id) AS kitne
+      FROM availability a
+      JOIN titles t          ON t.id = a.title_id
+      JOIN title_languages l ON l.title_id = t.id
+     WHERE a.provider_id = ?
+       AND a.country = ?
+       AND a.is_current = 1
+       AND a.offer_type IN ('flatrate','ads','free')
+     GROUP BY l.lang_code, t.media_type
+     ORDER BY kitne DESC",
+    [(int) $prov['id'], $country]) as $r) {
+    $ls = lang_page_slug($r['lang_code']);
+    if ($ls === null) {
+        continue;
+    }
+    $bhasha_links[] = [
+        'url'   => provider_url($prov) . '/' . $ls . '-' . ($r['media_type'] === 'tv' ? 'series' : 'movies'),
+        'label' => lang_label($r['lang_code']) . ' ' . ($r['media_type'] === 'tv' ? 'सीरीज़' : 'फिल्में')
+                 . ' (' . (int) $r['kitne'] . ')',
+    ];
+}
+$bhasha_links = array_slice($bhasha_links, 0, 12);
+
 // ---- meta ---------------------------------------------------------------------
 $type_label = $type === 'movie' ? 'फिल्में' : ($type === 'tv' ? 'वेब सीरीज़' : 'फिल्में और वेब सीरीज़');
 $desc = $prov['name'] . ' India पर अभी ' . $total . ' ' . $type_label
@@ -101,6 +128,13 @@ page_header([
     <h1><?= h($prov['name']) ?> पर क्या-क्या है</h1>
     <p class="dim" style="margin:0">भारत में अभी <b><?= $total ?></b> <?= h($type_label) ?> सब्सक्रिप्शन/मुफ़्त में
        · रोज़ अपडेट होता है</p>
+    <div class="sublinks">
+      <a href="/naya/<?= h(rawurlencode($prov['slug'])) ?>">इस हफ़्ते नया आया →</a>
+      <a href="/hata/<?= h(rawurlencode($prov['slug'])) ?>">हाल में क्या हटा →</a>
+      <?php foreach ($bhasha_links as $bl): ?>
+        <a href="<?= h($bl['url']) ?>"><?= h($bl['label']) ?></a>
+      <?php endforeach; ?>
+    </div>
   </div>
 </div>
 

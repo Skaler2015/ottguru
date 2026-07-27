@@ -51,6 +51,8 @@ function page_header(array $opt = []): void
     <a class="logo" href="/">OTT<span> गुरु</span></a>
     <nav class="topnav">
       <a href="/">होम</a>
+      <a href="/naya">नया आया</a>
+      <a href="/hata">क्या हटा</a>
     </nav>
   </div>
 </header>

@@ -97,7 +97,7 @@ page_header([
 <?php endif; ?>
 
 <?php if ($naya !== []): ?>
-<h2>इस हफ़्ते OTT पर नया आया</h2>
+<h2>इस हफ़्ते OTT पर नया आया <a class="small" href="/naya">सब देखिए →</a></h2>
 <div class="newrow">
   <?php foreach ($naya as $t): ?>
   <a class="card" href="<?= h(title_url($t)) ?>">

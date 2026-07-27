@@ -93,6 +93,28 @@ function hindi_num(int|string $n): string
                                '5'=>'५','6'=>'६','7'=>'७','8'=>'८','9'=>'९']);
 }
 
+/**
+ * भाषा पेजों के URL-टुकड़े — /platform/netflix/hindi-movies का 'hindi'।
+ * सिर्फ़ यही भाषाएँ पेज बनाती हैं; बाक़ी कोड आए तो 404 (thin पेजों से बचाव)।
+ */
+function lang_slugs(): array
+{
+    return [
+        'hindi'     => 'hi', 'english'  => 'en', 'tamil'    => 'ta', 'telugu'  => 'te',
+        'malayalam' => 'ml', 'kannada'  => 'kn', 'bengali'  => 'bn', 'marathi' => 'mr',
+        'punjabi'   => 'pa', 'gujarati' => 'gu', 'korean'   => 'ko', 'japanese'=> 'ja',
+        'spanish'   => 'es', 'urdu'     => 'ur',
+    ];
+}
+
+/** lang_code → URL-टुकड़ा ('hi' → 'hindi'); नक़्शे में न हो तो null */
+function lang_page_slug(string $code): ?string
+{
+    static $rev = null;
+    $rev ??= array_flip(lang_slugs());
+    return $rev[$code] ?? null;
+}
+
 /** 404 भेजकर पन्ना दिखाना */
 function not_found(): never
 {

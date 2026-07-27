@@ -51,7 +51,10 @@ site/                   वेबसाइट का कोड (public_html क�
   pages/
     home.php            होमपेज — आँकड़े, platforms, इस हफ़्ते नया
     title.php           /movie/{slug}, /series/{slug} — कहाँ देखें + पूरा इतिहास
-    provider.php        /platform/{slug} — सूची, filter, इस हफ़्ते नया
+    provider.php        /platform/{slug} — सूची, filter, भाषा-लिंक, इस हफ़्ते नया
+    lang.php            /platform/{slug}/hindi-movies — भाषा पेज (0 पर 404, <5 पर noindex)
+    changes.php         /naya[/{slug}], /hata[/{slug}] — क्या आया, क्या हटा + अब कहाँ है
+    sitemap.php         /sitemap.xml — सिर्फ़ वही पन्ने जिन पर असल में कुछ है
     404.php
 ```
 
@@ -140,9 +143,14 @@ hPanel → Advanced → Cron Jobs
 
 ## वेबसाइट लगाने का तरीक़ा (चरण 2)
 
-वेबसाइट के तीन पन्ने तैयार हैं — होमपेज, title पन्ना (`/movie/jawan-2023`,
-`/series/mirzapur`), और platform पन्ना (`/platform/netflix`)। सब हिंदी में,
-schema.org और TMDB attribution के साथ।
+वेबसाइट के सारे पन्ने तैयार हैं — होमपेज, title पन्ना (`/movie/jawan-2023`,
+`/series/mirzapur`), platform पन्ना (`/platform/netflix`), भाषा पेज
+(`/platform/netflix/hindi-movies`), changes पेज (`/naya`, `/hata` —
+per-platform भी), और `/sitemap.xml`। सब हिंदी में, schema.org और TMDB
+attribution के साथ।
+
+साइट live करने के बाद Google Search Console में `sitemap.xml` जमा कर
+दीजिए — `robots.txt` में उसका पता पहले से लिखा है।
 
 ### सबसे साफ़ तरीक़ा — public/ को ही web root बनाइए
 

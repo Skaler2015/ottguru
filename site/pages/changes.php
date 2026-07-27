@@ -1,0 +1,193 @@
+<?php
+/**
+ * CHANGES पेज — "क्या आया, क्या हटा"। यही बार-बार ट्रैफ़िक लाएगा।
+ *   /naya            सब platforms पर इस हफ़्ते नया  (queries.sql #4 का सब-platform रूप)
+ *   /naya/netflix    सिर्फ़ Netflix पर नया
+ *   /hata            हाल में क्या हटा (30 दिन)      (queries.sql #5)
+ *   /hata/netflix    सिर्फ़ Netflix से हटा
+ * /hata पर हर title के आगे "अब कहाँ है" भी दिखता है — यह हमारे ही डेटा से
+ * निकलता है, JustWatch पर यह नहीं मिलता।
+ * /naya (सब-platform) पर query #7 की "platform बदलने वाली" कहानियाँ भी हैं।
+ *
+ * index.php से मिलता है: $want_mode ('added'|'removed'), $want_slug (या null)
+ */
+declare(strict_types=1);
+
+$country  = $CFG['country'] ?? 'IN';
+$is_added = $want_mode === 'added';
+$days     = $is_added ? 7 : 30;   // queries.sql #4 और #5 की खिड़कियाँ
+
+$prov = null;
+if ($want_slug !== null) {
+    $prov = one($PDO, 'SELECT * FROM providers WHERE slug = ? AND is_active = 1', [$want_slug]);
+    if ($prov === null) {
+        not_found();
+    }
+}
+
+$prov_sql  = $prov !== null ? ' AND c.provider_id = ? ' : '';
+$prov_args = $prov !== null ? [(int) $prov['id']] : [];
+
+// added पर offer की शर्त (#4 की तरह); removed पर नहीं (#5 की तरह) —
+// किराये से हटना भी हटना ही है
+$offer_sql = $is_added ? " AND c.offer_type IN ('flatrate','ads','free') " : '';
+
+$rows = all($PDO, "
+    SELECT DISTINCT t.id AS tid, t.slug, t.title, t.release_year, t.poster_path,
+           t.media_type, c.changed_on, c.offer_type, p.name AS pname, p.slug AS pslug
+      FROM availability_changes c
+      JOIN titles t    ON t.id = c.title_id
+      JOIN providers p ON p.id = c.provider_id
+     WHERE c.country = ?
+       AND c.change_type = ?
+       $offer_sql
+       $prov_sql
+       AND c.changed_on >= (CURDATE() - INTERVAL $days DAY)
+     ORDER BY c.changed_on DESC
+     LIMIT 200",
+    array_merge([$country, $want_mode], $prov_args));
+
+// ---- /hata: हटे titles अब कहाँ हैं — एक ही query में सबके लिए ----------------
+$ab_kahan = [];
+if (!$is_added && $rows !== []) {
+    $ids = array_values(array_unique(array_map(fn ($r) => (int) $r['tid'], $rows)));
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    foreach (all($PDO, "
+        SELECT a.title_id, p.name, p.slug
+          FROM availability a
+          JOIN providers p ON p.id = a.provider_id
+         WHERE a.title_id IN ($in)
+           AND a.country = ?
+           AND a.is_current = 1
+           AND a.offer_type IN ('flatrate','ads','free')
+         ORDER BY p.display_priority",
+        array_merge($ids, [$country])) as $r) {
+        $ab_kahan[(int) $r['title_id']][] = $r;
+    }
+}
+
+// ---- /naya (सब-platform): query #7 — एक ही दिन एक से हटी, दूसरे पर आई ---------
+$badli = [];
+if ($is_added && $prov === null) {
+    $badli = all($PDO, "
+        SELECT t.slug, t.title, t.media_type, t.release_year,
+               pOut.name AS gaya_yahan_se, pIn.name AS aaya_yahan, c1.changed_on
+          FROM availability_changes c1
+          JOIN availability_changes c2
+               ON c2.title_id = c1.title_id
+              AND c2.changed_on = c1.changed_on
+              AND c2.change_type = 'added'
+              AND c2.provider_id <> c1.provider_id
+          JOIN titles t       ON t.id = c1.title_id
+          JOIN providers pOut ON pOut.id = c1.provider_id
+          JOIN providers pIn  ON pIn.id  = c2.provider_id
+         WHERE c1.change_type = 'removed'
+           AND c1.country = ?
+           AND c1.offer_type IN ('flatrate','ads','free')
+           AND c2.offer_type IN ('flatrate','ads','free')
+           AND c1.changed_on >= (CURDATE() - INTERVAL 60 DAY)
+         ORDER BY c1.changed_on DESC
+         LIMIT 30",
+        [$country]);
+}
+
+// ---- तारीख़ के हिसाब से गुच्छे — "22 जुलाई 2026" के नीचे उस दिन की सारी ---------
+$by_date = [];
+foreach ($rows as $r) {
+    $by_date[$r['changed_on']][] = $r;
+}
+
+// ---- meta ---------------------------------------------------------------------
+$pname = $prov !== null ? $prov['name'] : null;
+if ($is_added) {
+    $h1   = $pname !== null ? $pname . ' पर इस हफ़्ते नया आया' : 'इस हफ़्ते OTT पर नया आया';
+    $desc = ($pname ?? 'Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV') . ' पर पिछले '
+          . $days . ' दिनों में कौन सी फिल्में और वेब सीरीज़ नई आईं — रोज़ अपडेट, OTT गुरु पर।';
+} else {
+    $h1   = $pname !== null ? $pname . ' से हाल में क्या हटा' : 'OTT से हाल में क्या हटा';
+    $desc = ($pname ?? 'OTT platforms') . ' से पिछले ' . $days
+          . ' दिनों में कौन सी फिल्में हटीं और अब कहाँ देख सकते हैं — OTT गुरु पर।';
+}
+
+$self = '/' . ($is_added ? 'naya' : 'hata') . ($prov !== null ? '/' . $prov['slug'] : '');
+
+page_header([
+    'title'       => $h1,
+    'description' => $desc,
+    'canonical'   => $self,
+    'noindex'     => $rows === [],   // ख़ाली पन्ना index न हो — thin content
+    'jsonld'      => [
+        '@context' => 'https://schema.org',
+        '@type'    => 'CollectionPage',
+        'name'     => $h1,
+        'url'      => 'https://ottguru.in' . $self,
+    ],
+]);
+?>
+
+<h1><?= h($h1) ?></h1>
+<p class="dim">पिछले <?= $days ?> दिन ·
+  <?php if ($prov !== null): ?>
+    <a href="<?= h(provider_url($prov)) ?>"><?= h($prov['name']) ?> पर पूरी सूची →</a>
+  <?php else: ?>
+    उपलब्धता रोज़ जाँची जाती है
+  <?php endif; ?>
+</p>
+
+<?php if ($rows === []): ?>
+  <div class="offer-none">
+    पिछले <?= $days ?> दिनों में यहाँ कोई बदलाव दर्ज नहीं हुआ।
+    <a href="/">होमपेज पर चलिए</a>
+  </div>
+<?php endif; ?>
+
+<?php foreach ($by_date as $date => $din_ke): ?>
+<h2><?= h(hindi_date($date)) ?></h2>
+<div class="newrow">
+  <?php foreach ($din_ke as $t): ?>
+  <a class="card" href="<?= h(title_url($t)) ?>">
+    <?php $img = tmdb_img($t['poster_path'], 'w342'); ?>
+    <?php if ($img !== null): ?>
+      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h($t['title']) ?> का poster">
+    <?php else: ?>
+      <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
+    <?php endif; ?>
+    <span class="card-t"><?= h($t['title']) ?></span>
+    <?php if ($is_added): ?>
+      <span class="newdate"><?= h($t['pname']) ?> पर आई</span>
+    <?php else: ?>
+      <span class="gonedate"><?= h($t['pname']) ?> से हटी</span>
+      <?php $ab = $ab_kahan[(int) $t['tid']] ?? []; ?>
+      <?php if ($ab !== []): ?>
+        <span class="newdate">अब <?= h(implode(', ', array_column($ab, 'name'))) ?> पर</span>
+      <?php else: ?>
+        <span class="card-y">अभी कहीं और नहीं</span>
+      <?php endif; ?>
+    <?php endif; ?>
+  </a>
+  <?php endforeach; ?>
+</div>
+<?php endforeach; ?>
+
+<?php if ($badli !== []): ?>
+<h2>एक platform से दूसरे पर गईं</h2>
+<p class="dim small">एक ही दिन एक जगह से हटीं और दूसरी पर आ गईं — plan बदलने से पहले यह देख लीजिए।</p>
+<ul class="history">
+  <?php foreach ($badli as $b): ?>
+  <li class="now">
+    <span class="h-when"><?= h(hindi_date($b['changed_on'])) ?></span> —
+    <a href="<?= h(title_url($b)) ?>"><b><?= h($b['title']) ?></b></a>:
+    <?= h($b['gaya_yahan_se']) ?> से <b><?= h($b['aaya_yahan']) ?></b> पर
+  </li>
+  <?php endforeach; ?>
+</ul>
+<?php endif; ?>
+
+<?php if ($prov === null): ?>
+<div class="note">
+  किसी एक platform का हिसाब चाहिए? platform के पन्ने पर "नया आया / हटा" के लिंक हैं —
+  <a href="/">होमपेज से platform चुनिए</a>।
+</div>
+<?php endif; ?>
+
+<?php page_footer(); ?>

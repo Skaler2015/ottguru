@@ -142,7 +142,18 @@ table.spells th { color: var(--dim); font-weight: 600; font-size: 14px; }
 /* नया आया strip */
 .newrow { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-top: 12px; }
 .newrow .card { flex: 0 0 130px; }
-.newdate { color: var(--green); font-size: 13px; }
+.newdate  { color: var(--green); font-size: 13px; }
+.gonedate { color: var(--red); font-size: 13px; }
+
+.tabs-label { align-self: center; }
+
+/* provider पेज पर भाषा/changes के छोटे लिंक */
+.sublinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.sublinks a {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 12px; font-size: 13px; color: var(--dim);
+}
+.sublinks a:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
 
 /* ---------------------------------------------------------------- होमपेज */
 .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
