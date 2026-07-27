@@ -40,6 +40,19 @@ bin/
   sync_catalog.php      नए titles खोजना
   sync_providers.php    providers जाँचना + बदलाव पकड़ना  ← नियम 2
   status.php            सेहत का पन्ना
+public/                 ← वेबसाइट का web root (चरण 2) — सिर्फ़ यही public_html में जाता है
+  index.php             front controller — सारे रास्ते यहीं से
+  .htaccess             सब रास्ते index.php की ओर
+  assets/site.css       एक ही stylesheet
+site/                   वेबसाइट का कोड (public_html के बाहर रहता है)
+  web.php               वेबसाइट का bootstrap (boot.php से अलग — बिना token/log-shell)
+  helpers.php           escaping, TMDB images, हिंदी तारीख़ें, लेबल
+  layout.php            header/footer + posters की grid
+  pages/
+    home.php            होमपेज — आँकड़े, platforms, इस हफ़्ते नया
+    title.php           /movie/{slug}, /series/{slug} — कहाँ देखें + पूरा इतिहास
+    provider.php        /platform/{slug} — सूची, filter, इस हफ़्ते नया
+    404.php
 ```
 
 ---
@@ -122,6 +135,45 @@ hPanel → Advanced → Cron Jobs
 ```cron
 15 1,2,3,4 * * *  wget -q -O /dev/null "https://ottguru.in/sync/bin/sync_providers.php?k=आपका-token"
 ```
+
+---
+
+## वेबसाइट लगाने का तरीक़ा (चरण 2)
+
+वेबसाइट के तीन पन्ने तैयार हैं — होमपेज, title पन्ना (`/movie/jawan-2023`,
+`/series/mirzapur`), और platform पन्ना (`/platform/netflix`)। सब हिंदी में,
+schema.org और TMDB attribution के साथ।
+
+### सबसे साफ़ तरीक़ा — public/ को ही web root बनाइए
+
+hPanel → Websites → ottguru.in → document root को इस फोल्डर के `public/`
+पर ले जाइए (या `public_html` को हटाकर उसकी जगह symlink):
+
+```bash
+ln -s /home/uXXXXXX/ottguru-sync/public /home/uXXXXXX/domains/ottguru.in/public_html
+```
+
+इसमें `config.php`, `lib/`, `site/` अपने-आप web root के बाहर रहते हैं —
+कुछ अलग से छिपाना नहीं पड़ता।
+
+### दूसरा तरीक़ा — public/ की फाइलें public_html में डालिए
+
+`public/` की चारों चीज़ें (`index.php`, `.htaccess`, `robots.txt`, `assets/`)
+`public_html` में copy कीजिए, बाक़ी app फोल्डर बाहर ही रहे। फिर
+`index.php` की **एक** लाइन बदलिए — ऊपर ही मिलेगी:
+
+```php
+require dirname(__DIR__) . '/site/web.php';   // ← app फोल्डर अलग जगह हो तो यह रास्ता बदलिए
+// जैसे: require '/home/uXXXXXX/ottguru-sync/site/web.php';
+```
+
+### याद रखने की बातें
+
+- posters/logos **TMDB CDN से** आते हैं — अपने सर्वर पर कुछ store नहीं होता
+- title पन्ने पर भाषा वाली पट्टी **फिल्म की भाषा** दिखाती है, dub नहीं —
+  dub की जानकारी Streaming Availability जुड़ने के बाद आएगी
+- paginated पन्ने (`?page=2`) अपने-आप `noindex` हैं — thin content से बचाव
+- वेबसाइट सिर्फ़ **पढ़ती** है — DB में लिखता केवल sync engine है
 
 ---
 

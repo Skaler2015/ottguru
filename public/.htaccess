@@ -1,0 +1,15 @@
+# OTT गुरु — सब रास्ते index.php से होकर
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # असली फाइल/फोल्डर (css, robots.txt) सीधे मिलें
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+# TMDB posters दूसरे domain से आते हैं, बाक़ी सब अपना
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>
