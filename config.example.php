@@ -26,8 +26,11 @@ return [
     // v3 API key या v4 Read Access Token — दोनों चलेंगे
     'tmdb_key' => 'यहाँ-TMDB-key',
 
-    // इसे बदलने की ज़रूरत नहीं। (टेस्टिंग या proxy के लिए ही है)
-    'tmdb_base' => 'https://api.themoviedb.org/3',
+    // TMDB के दो आधिकारिक पते हैं। भारत के सर्वरों (Hostinger Mumbai समेत) से
+    // api.themoviedb.org पर रुक-रुककर connection reset आता है — असली deployment
+    // में परखा गया (5 में से 2-3 कॉल टूटती थीं)। api.tmdb.org साफ़ चला, इसलिए
+    // वही default है। दिक़्क़त हो तो जाँच: README का "TMDB तक पहुँच" हिस्सा।
+    'tmdb_base' => 'https://api.tmdb.org/3',
 
     // ---------------------------------------------------------------- सुरक्षा
     // ब्राउज़र से स्क्रिप्ट चलाने के लिए ज़रूरी: ?k=यह-टोकन

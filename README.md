@@ -227,6 +227,34 @@ tier 1 titles ÷ 1 दिन  =  रोज़ की ज़रूरत
 
 ---
 
+## TMDB तक पहुँच — भारत के सर्वर पर ख़ास बात
+
+असली deployment (Hostinger Mumbai, 27 जुलाई 2026) में मिला: TMDB के मुख्य पते
+`api.themoviedb.org` पर **रुक-रुककर connection reset** आता है — पहली कॉल चलती
+है, अगली टूट जाती है। sync में यह ऐसे दिखता है:
+
+```
+discover विफल ... Recv failure: Connection reset by peer
+```
+
+**इलाज:** `config.php` में TMDB का दूसरा आधिकारिक पता रखिए —
+
+```php
+'tmdb_base' => 'https://api.tmdb.org/3',
+```
+
+दोनों पतों की जाँच SSH से एक लाइन में (401 = रास्ता साफ़, 000 = reset):
+
+```bash
+for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{http_code} " --max-time 10 "https://api.tmdb.org/3/configuration"; done; echo
+```
+
+उस दिन की असल पैमाइश: `api.themoviedb.org` → `401 000 401 000 401`,
+`api.tmdb.org` → `401 401 401 401 401`। इसीलिए `config.example.php` का
+default अब `api.tmdb.org` है।
+
+---
+
 ## जो अभी नहीं है (जान-बूझकर)
 
 - **ऑडियो भाषा / dub** — इसके लिए Streaming Availability चाहिए, और वो अभी

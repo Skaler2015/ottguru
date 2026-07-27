@@ -161,6 +161,9 @@ Hostinger **Cloud Startup** — 4 CPU cores, 4 GB RAM, 100 GB NVMe, 100 PHP work
   tayariportal, ChangeTracker)। sync रात 1–5 बजे चलाइए, वरना बाक़ी साइटें धीमी
   पड़ेंगी या 503 देंगी।
 - **`config.php` में DB पासवर्ड है** — फोल्डर `public_html` के बाहर रहना चाहिए।
+- **TMDB का पता `api.tmdb.org` रखिए, `api.themoviedb.org` नहीं** — Hostinger
+  Mumbai से मुख्य पते पर रुक-रुककर connection reset आता है (असली deployment में
+  पैमाइश: 5 में से 2 कॉल टूटीं; दूसरे पते पर 5/5 साफ़)। जाँच का तरीक़ा README में।
 
 ### रफ़्तार का हिसाब
 हर title पर **एक** API कॉल (`append_to_response` से मेटाडेटा + providers एक साथ)।
