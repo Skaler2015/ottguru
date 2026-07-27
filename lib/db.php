@@ -19,6 +19,11 @@ function db_connect(array $c): PDO
         fail('DB से नहीं जुड़ सका — config.php में db सेटिंग जाँचिए। (' . $e->getMessage() . ')');
     }
     $pdo->exec("SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'");
+    // collation साफ़-साफ़ बतानी ज़रूरी है — Hostinger के MariaDB पर connection की
+    // default collation (general_ci) टेबलों की unicode_ci से टकराती है और
+    // NULLIF/तुलना पर 'Illegal mix of collations' fatal आता है (असली deployment
+    // में sync_catalog page-update पर पकड़ में आया, 27 जुलाई 2026)
+    $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
     return $pdo;
 }
 
