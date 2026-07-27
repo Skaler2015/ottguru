@@ -1,0 +1,187 @@
+/* OTT गुरु — एक ही stylesheet, कोई framework नहीं */
+
+:root {
+  --bg:      #0d131a;
+  --bg2:     #141d27;
+  --card:    #1a2531;
+  --line:    #263442;
+  --text:    #e8eef4;
+  --dim:     #93a5b5;
+  --accent:  #ffb43a;   /* गुरु का केसरिया */
+  --green:   #43c98a;
+  --red:     #e0655f;
+  --link:    #6fb7ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.7 system-ui, "Noto Sans Devanagari", "Mangal", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------------------------------------------------------------- ऊपर की पट्टी */
+.top { background: var(--bg2); border-bottom: 1px solid var(--line); }
+.top-in { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.logo { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: .5px; }
+.logo span { color: var(--accent); }
+.logo:hover { text-decoration: none; }
+.topnav a { color: var(--dim); margin-left: 18px; }
+
+main { padding: 24px 16px 48px; }
+
+h1 { font-size: 28px; line-height: 1.3; margin: 0 0 4px; }
+h2 { font-size: 20px; margin: 32px 0 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
+
+.dim   { color: var(--dim); }
+.small { font-size: 14px; }
+
+/* ---------------------------------------------------------------- title पन्ना */
+.t-head { display: flex; gap: 24px; margin-top: 8px; }
+.t-poster img { width: 220px; border-radius: 10px; display: block; }
+.t-meta { flex: 1; min-width: 0; }
+.t-sub { color: var(--dim); margin: 0 0 10px; }
+.t-sub b { color: var(--text); }
+
+.badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.badge {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 12px; font-size: 14px; color: var(--dim);
+}
+
+.rating { color: var(--accent); font-weight: 700; }
+
+/* अभी कहाँ देखें */
+.offers { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.offer {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 14px;
+}
+.offer img { width: 44px; height: 44px; border-radius: 9px; }
+.offer .o-name { font-weight: 700; }
+.offer .o-type { color: var(--dim); font-size: 14px; }
+.offer .o-since { margin-left: auto; color: var(--dim); font-size: 13px; text-align: right; }
+.offer .o-link { white-space: nowrap; }
+.offer-none {
+  background: var(--card); border: 1px dashed var(--line);
+  border-radius: 10px; padding: 14px 16px; color: var(--dim);
+}
+
+/* इतिहास — असली USP */
+.history { border-left: 2px solid var(--line); margin: 12px 0 0 8px; padding-left: 0; list-style: none; }
+.history li { position: relative; padding: 0 0 14px 22px; }
+.history li::before {
+  content: ""; position: absolute; left: -7px; top: 8px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--dim); border: 2px solid var(--bg);
+}
+.history li.now::before    { background: var(--green); }
+.history li.gone::before   { background: var(--red); }
+.history .h-when { color: var(--dim); font-size: 14px; }
+
+table.spells { border-collapse: collapse; width: 100%; margin-top: 8px; }
+table.spells th, table.spells td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+table.spells th { color: var(--dim); font-weight: 600; font-size: 14px; }
+.tag-now  { color: var(--green); font-weight: 700; }
+.tag-gone { color: var(--dim); }
+
+.note {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 14px; color: var(--dim); font-size: 14px; margin-top: 10px;
+}
+
+/* ---------------------------------------------------------------- grid */
+.grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  margin-top: 12px;
+}
+.card { display: flex; flex-direction: column; color: var(--text); }
+.card:hover { text-decoration: none; }
+.card:hover .card-t { color: var(--accent); }
+.card img {
+  width: 100%; aspect-ratio: 2/3; object-fit: cover;
+  border-radius: 8px; background: var(--card); display: block;
+}
+.noposter {
+  aspect-ratio: 2/3; border-radius: 8px; background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 14px; text-align: center; padding: 10px;
+}
+.card-t { margin-top: 6px; font-size: 14px; font-weight: 600; line-height: 1.4; }
+.card-y { color: var(--dim); font-size: 13px; }
+
+/* ---------------------------------------------------------------- provider पन्ना */
+.p-head { display: flex; align-items: center; gap: 16px; }
+.p-head img { width: 64px; height: 64px; border-radius: 14px; }
+
+.tabs { display: flex; gap: 8px; margin: 14px 0 4px; flex-wrap: wrap; }
+.tabs a {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 16px; color: var(--dim); font-size: 14px;
+}
+.tabs a.on { background: var(--accent); color: #201400; border-color: var(--accent); font-weight: 700; }
+.tabs a:hover { text-decoration: none; }
+
+.pager { display: flex; gap: 10px; justify-content: center; margin-top: 24px; }
+.pager a, .pager span {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 16px;
+}
+.pager span.here { border-color: var(--accent); color: var(--accent); }
+
+/* नया आया strip */
+.newrow { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-top: 12px; }
+.newrow .card { flex: 0 0 130px; }
+.newdate  { color: var(--green); font-size: 13px; }
+.gonedate { color: var(--red); font-size: 13px; }
+
+.tabs-label { align-self: center; }
+
+/* provider पेज पर भाषा/changes के छोटे लिंक */
+.sublinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.sublinks a {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 12px; font-size: 13px; color: var(--dim);
+}
+.sublinks a:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
+
+/* ---------------------------------------------------------------- होमपेज */
+.stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+.stat {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 20px; min-width: 140px;
+}
+.stat b { display: block; font-size: 24px; color: var(--accent); }
+.stat span { color: var(--dim); font-size: 14px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 16px 6px 8px; color: var(--text);
+}
+.chip img { width: 28px; height: 28px; border-radius: 6px; }
+.chip:hover { border-color: var(--accent); text-decoration: none; }
+
+/* ---------------------------------------------------------------- नीचे */
+.foot { border-top: 1px solid var(--line); background: var(--bg2); padding: 20px 0 28px; margin-top: 40px; }
+.foot p { color: var(--dim); font-size: 14px; margin: 8px 0; }
+.foot .tmdb { font-size: 13px; }
+
+/* ---------------------------------------------------------------- मोबाइल */
+@media (max-width: 640px) {
+  .t-head { flex-direction: column; }
+  .t-poster img { width: 160px; }
+  h1 { font-size: 23px; }
+  .offer .o-since { display: none; }
+}

@@ -40,7 +40,7 @@
 | 0 — डेटा सत्यापन | ✅ पूरा। TMDB 30 में से 29 सही (~97%) |
 | 1 — sync engine | ✅ बना और टेस्ट हुआ (यही रिपॉज़िटरी) |
 | 1b — Streaming Availability (ऑडियो भाषा) | ⏸ रुका — RapidAPI subscribe होना बाक़ी |
-| 2 — वेबसाइट | ⬜ अगला काम। `queries.sql` में हर पन्ने की query तैयार है |
+| 2 — वेबसाइट | ✅ पूरा। होमपेज, title, platform, भाषा, changes (naya/hata) पन्ने + sitemap.xml — सब असली MariaDB पर परखे गए |
 | 3 — बंडल / tier / अलर्ट | ⬜ बाद में |
 
 **sync आज से चलना ज़रूरी है।** जो दिन बीत गया उसका इतिहास वापस नहीं आएगा —
@@ -101,6 +101,10 @@ bin/
   sync_catalog.php      नए titles खोजना (कर्सर से resumable)
   sync_providers.php    providers जाँचना + diff  ← नियम 2
   status.php            सेहत का पन्ना
+public/                 वेबसाइट का web root — index.php (router), .htaccess, assets/
+site/                   वेबसाइट का कोड — web.php (bootstrap), helpers, layout,
+                        pages/ (home, title, provider, 404)। सिर्फ़ पढ़ता है, DB में
+                        लिखता केवल sync engine है
 ```
 
 ---
