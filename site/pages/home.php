@@ -70,26 +70,25 @@ page_header([
         '@type'    => 'WebSite',
         'name'     => 'OTT Guru',
         'url'      => 'https://ottguru.in/',
-        'inLanguage' => 'hi',
+        'inLanguage' => OTT_LANG,
     ],
 ]);
 ?>
 
-<h1>कौन सी फिल्म किस OTT पर है?</h1>
-<p class="dim">Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV — सब एक जगह।
-   और सिर्फ़ "कहाँ है" नहीं: <b>कब आई, कहाँ-कहाँ रही, कब हटी</b> — पूरा इतिहास।</p>
+<h1><?= h(t('कौन सी फिल्म किस OTT पर है?')) ?></h1>
+<p class="dim"><?= t('Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV — सब एक जगह। और सिर्फ़ "कहाँ है" नहीं: <b>कब आई, कहाँ-कहाँ रही, कब हटी</b> — पूरा इतिहास।') ?></p>
 
 <?php if ($stats !== [] && (int) ($stats['titles'] ?? 0) > 0): ?>
 <div class="stats">
-  <div class="stat"><b><?= h(hindi_num((int) $stats['titles'])) ?></b><span>फिल्में और सीरीज़</span></div>
+  <div class="stat"><b><?= h(hindi_num((int) $stats['titles'])) ?></b><span><?= h(t('फिल्में और सीरीज़')) ?></span></div>
   <div class="stat"><b><?= h(hindi_num((int) $stats['platforms'])) ?></b><span>OTT platforms</span></div>
-  <div class="stat"><b><?= h(hindi_num((int) $stats['abhi_uplabdh'])) ?></b><span>अभी उपलब्ध</span></div>
-  <div class="stat"><b><?= h(hindi_num((int) $stats['is_hafte_naya'])) ?></b><span>इस हफ़्ते नई आईं</span></div>
+  <div class="stat"><b><?= h(hindi_num((int) $stats['abhi_uplabdh'])) ?></b><span><?= h(t('अभी उपलब्ध')) ?></span></div>
+  <div class="stat"><b><?= h(hindi_num((int) $stats['is_hafte_naya'])) ?></b><span><?= h(t('इस हफ़्ते नई आईं')) ?></span></div>
 </div>
 <?php endif; ?>
 
 <?php if ($provs !== []): ?>
-<h2>Platform चुनिए</h2>
+<h2><?= h(t('Platform चुनिए')) ?></h2>
 <div class="chips">
   <?php foreach ($provs as $p): ?>
   <a class="chip" href="<?= h(provider_url($p)) ?>">
@@ -102,27 +101,27 @@ page_header([
 <?php endif; ?>
 
 <?php if ($naya !== []): ?>
-<h2>इस हफ़्ते OTT पर नया आया <a class="small" href="/naya">सब देखिए →</a></h2>
+<h2><?= h(t('इस हफ़्ते OTT पर नया आया')) ?> <a class="small" href="/naya"><?= h(t('सब देखिए →')) ?></a></h2>
 <div class="newrow">
   <?php foreach ($naya as $t): ?>
   <a class="card" href="<?= h(title_url($t)) ?>">
     <?php $img = tmdb_img($t['poster_path'], 'w342'); ?>
     <?php if ($img !== null): ?>
-      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h($t['title']) ?> का poster">
+      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>">
     <?php else: ?>
       <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
     <?php endif; ?>
     <span class="card-t"><?= h($t['title']) ?></span>
     <span class="newdate"><?= (int) $t['pkitne'] > 1
-        ? (int) $t['pkitne'] . ' platforms पर'
-        : h($t['pname']) . ' पर' ?></span>
+        ? h(tf('%d platforms पर', (int) $t['pkitne']))
+        : h(tf('%s पर', $t['pname'])) ?></span>
   </a>
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
 <?php if ($hot !== []): ?>
-<h2>अभी चर्चा में</h2>
+<h2><?= h(t('अभी चर्चा में')) ?></h2>
 <?php render_title_grid($hot); ?>
 <?php endif; ?>
 
