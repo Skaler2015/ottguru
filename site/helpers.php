@@ -16,11 +16,19 @@ function tmdb_img(?string $path, string $size = 'w342'): ?string
     return $path === null ? null : 'https://image.tmdb.org/t/p/' . $size . $path;
 }
 
-/** 2024-01-12 → "12 जनवरी 2024" */
+/** महीनों के नाम — UI की भाषा के हिसाब से */
+function month_names(): array
+{
+    static $hi = [1=>'जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून',
+                  'जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
+    static $en = [1=>'January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+    return OTT_LANG === 'hi' ? $hi : $en;
+}
+
+/** 2024-01-12 → "12 जनवरी 2024" / "12 January 2024" */
 function hindi_date(?string $ymd): string
 {
-    static $mah = [1=>'जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून',
-                   'जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
     if (nz($ymd) === null) {
         return '—';
     }
@@ -28,36 +36,34 @@ function hindi_date(?string $ymd): string
     if ($ts === false) {
         return '—';
     }
-    return (int) date('j', $ts) . ' ' . $mah[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+    return (int) date('j', $ts) . ' ' . month_names()[(int) date('n', $ts)] . ' ' . date('Y', $ts);
 }
 
-/** सिर्फ़ "जनवरी 2024" — इतिहास की पट्टी के लिए */
+/** सिर्फ़ "जनवरी 2024" / "January 2024" — इतिहास की पट्टी के लिए */
 function hindi_month(?string $ymd): string
 {
-    static $mah = [1=>'जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून',
-                   'जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
     if (nz($ymd) === null) {
         return '—';
     }
     $ts = strtotime($ymd);
-    return $ts === false ? '—' : $mah[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+    return $ts === false ? '—' : month_names()[(int) date('n', $ts)] . ' ' . date('Y', $ts);
 }
 
 function offer_label(string $t): string
 {
     return match ($t) {
-        'flatrate' => 'सब्सक्रिप्शन में',
-        'ads'      => 'विज्ञापन के साथ',
-        'free'     => 'मुफ़्त',
-        'rent'     => 'किराये पर',
-        'buy'      => 'ख़रीदकर',
+        'flatrate' => t('सब्सक्रिप्शन में'),
+        'ads'      => t('विज्ञापन के साथ'),
+        'free'     => t('मुफ़्त'),
+        'rent'     => t('किराये पर'),
+        'buy'      => t('ख़रीदकर'),
         default    => $t,
     };
 }
 
 function media_label(string $t): string
 {
-    return $t === 'tv' ? 'वेब सीरीज़' : 'फिल्म';
+    return $t === 'tv' ? t('वेब सीरीज़') : t('फिल्म');
 }
 
 /** title के canonical पन्ने का रास्ता */
@@ -71,10 +77,10 @@ function provider_url(array $p): string
     return '/platform/' . rawurlencode($p['slug']);
 }
 
-/** भाषा कोड → हिंदी नाम (भारत में आम भाषाएँ; बाक़ी कोड जैसे के तैसे) */
+/** भाषा कोड → UI की भाषा में नाम (भारत में आम भाषाएँ; बाक़ी कोड जैसे के तैसे) */
 function lang_label(string $code): string
 {
-    static $map = [
+    static $hi = [
         'hi' => 'हिंदी',    'en' => 'अंग्रेज़ी', 'ta' => 'तमिल',    'te' => 'तेलुगु',
         'ml' => 'मलयालम',  'kn' => 'कन्नड़',   'bn' => 'बांग्ला',  'mr' => 'मराठी',
         'pa' => 'पंजाबी',   'gu' => 'गुजराती', 'or' => 'ओड़िया',   'as' => 'असमिया',
@@ -83,12 +89,25 @@ function lang_label(string $code): string
         'it' => 'इतालवी',  'ru' => 'रूसी',    'th' => 'थाई',     'tr' => 'तुर्की',
         'id' => 'इंडोनेशियाई', 'ar' => 'अरबी', 'pt' => 'पुर्तगाली', 'sa' => 'संस्कृत',
     ];
+    static $en = [
+        'hi' => 'Hindi',     'en' => 'English',  'ta' => 'Tamil',      'te' => 'Telugu',
+        'ml' => 'Malayalam', 'kn' => 'Kannada',  'bn' => 'Bengali',    'mr' => 'Marathi',
+        'pa' => 'Punjabi',   'gu' => 'Gujarati', 'or' => 'Odia',       'as' => 'Assamese',
+        'ur' => 'Urdu',      'ne' => 'Nepali',   'ko' => 'Korean',     'ja' => 'Japanese',
+        'fr' => 'French',    'es' => 'Spanish',  'de' => 'German',     'zh' => 'Chinese',
+        'it' => 'Italian',   'ru' => 'Russian',  'th' => 'Thai',       'tr' => 'Turkish',
+        'id' => 'Indonesian','ar' => 'Arabic',   'pt' => 'Portuguese', 'sa' => 'Sanskrit',
+    ];
+    $map = OTT_LANG === 'hi' ? $hi : $en;
     return $map[$code] ?? strtoupper($code);
 }
 
-/** देवनागरी अंक — आँकड़ों की पट्टी थोड़ी अपनी सी लगे */
+/** देवनागरी अंक — सिर्फ़ हिंदी UI में; अंग्रेज़ी में अंक जैसे के तैसे */
 function hindi_num(int|string $n): string
 {
+    if (OTT_LANG !== 'hi') {
+        return (string) $n;
+    }
     return strtr((string) $n, ['0'=>'०','1'=>'१','2'=>'२','3'=>'३','4'=>'४',
                                '5'=>'५','6'=>'६','7'=>'७','8'=>'८','9'=>'९']);
 }

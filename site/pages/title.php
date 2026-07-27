@@ -71,10 +71,13 @@ $h1       = $title['title'] . ($year !== null ? ' (' . $year . ')' : '');
 $now_on   = array_values(array_unique(array_map(fn ($o) => $o['name'], $stream)));
 
 if ($now_on !== []) {
-    $desc = $title['title'] . ' ' . ($is_tv ? 'वेब सीरीज़' : 'फिल्म') . ' अभी '
-          . implode(', ', array_slice($now_on, 0, 3)) . ' पर देखी जा सकती है। कब आई, कहाँ-कहाँ रही — पूरा इतिहास OTT गुरु पर।';
+    $desc = tf(
+        '%s अभी %s पर देखी जा सकती है। कब आई, कहाँ-कहाँ रही — पूरा इतिहास OTT गुरु पर।',
+        $title['title'],
+        implode(', ', array_slice($now_on, 0, 3))
+    );
 } else {
-    $desc = $title['title'] . ' अभी भारत में किसी OTT के सब्सक्रिप्शन में नहीं है। यह पहले कहाँ थी और कब हटी — पूरा इतिहास OTT गुरु पर।';
+    $desc = tf('%s अभी भारत में किसी OTT के सब्सक्रिप्शन में नहीं है। यह पहले कहाँ थी और कब हटी — पूरा इतिहास OTT गुरु पर।', $title['title']);
 }
 
 $jsonld = [
@@ -105,7 +108,7 @@ if ((float) $title['vote_average'] > 0 && (int) $title['vote_count'] >= 10) {
 }
 
 page_header([
-    'title'       => $h1 . ' कहाँ देखें',
+    'title'       => tf('%s कहाँ देखें', $h1),
     'description' => $desc,
     'canonical'   => title_url($title),
     'image'       => tmdb_img($title['poster_path'], 'w500'),
@@ -116,7 +119,7 @@ page_header([
 <div class="t-head">
   <?php $poster = tmdb_img($title['poster_path'], 'w342'); ?>
   <?php if ($poster !== null): ?>
-  <div class="t-poster"><img src="<?= h($poster) ?>" alt="<?= h($title['title']) ?> का poster"></div>
+  <div class="t-poster"><img src="<?= h($poster) ?>" alt="<?= h(tf('%s का poster', $title['title'])) ?>"></div>
   <?php endif; ?>
 
   <div class="t-meta">
@@ -124,10 +127,10 @@ page_header([
     <p class="t-sub">
       <?= h(media_label($title['media_type'])) ?>
       <?php if (nz($title['original_title'] ?? null) !== null && $title['original_title'] !== $title['title']): ?>
-        · मूल नाम: <b><?= h($title['original_title']) ?></b>
+        · <?= h(t('मूल नाम:')) ?> <b><?= h($title['original_title']) ?></b>
       <?php endif; ?>
       <?php if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0): ?>
-        · <?= (int) $title['runtime'] ?> मिनट
+        · <?= h(tf('%d मिनट', (int) $title['runtime'])) ?>
       <?php endif; ?>
       <?php if ((float) $title['vote_average'] > 0): ?>
         · <span class="rating">★ <?= number_format((float) $title['vote_average'], 1) ?></span><span class="dim">/10</span>
@@ -137,16 +140,16 @@ page_header([
     <?php if ($langs !== []): ?>
     <div class="badges">
       <?php foreach ($langs as $l): ?>
-        <span class="badge"><?= h(lang_label($l['lang_code'])) ?><?= $l['kind'] === 'original' ? ' (मूल)' : '' ?></span>
+        <span class="badge"><?= h(lang_label($l['lang_code'])) ?><?= $l['kind'] === 'original' ? ' ' . h(t('(मूल)')) : '' ?></span>
       <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
-    <h2>अभी कहाँ देखें</h2>
+    <h2><?= h(t('अभी कहाँ देखें')) ?></h2>
     <?php if ($stream === [] && $paisa === []): ?>
       <div class="offer-none">
-        यह <?= h(media_label($title['media_type'])) ?> अभी भारत में किसी OTT पर नहीं दिख रही।
-        <?php if ($spells !== []): ?>नीचे इतिहास में देखिए यह पहले कहाँ थी।<?php endif; ?>
+        <?= h(tf('यह %s अभी भारत में किसी OTT पर नहीं दिख रही।', media_label($title['media_type']))) ?>
+        <?php if ($spells !== []): ?><?= h(t('नीचे इतिहास में देखिए यह पहले कहाँ थी।')) ?><?php endif; ?>
       </div>
     <?php else: ?>
       <div class="offers">
@@ -158,9 +161,9 @@ page_header([
             <div class="o-name"><a href="/platform/<?= h(rawurlencode($o['slug'])) ?>"><?= h($o['name']) ?></a></div>
             <div class="o-type"><?= h(offer_label($o['offer_type'])) ?></div>
           </div>
-          <div class="o-since"><?= h(hindi_month($o['first_seen'])) ?> से यहाँ है
+          <div class="o-since"><?= h(tf('%s से यहाँ है', hindi_month($o['first_seen']))) ?>
             <?php if (nz($o['watch_link'] ?? null) !== null): ?>
-              <br><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank">देखें ↗</a>
+              <br><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank"><?= h(t('देखें ↗')) ?></a>
             <?php endif; ?>
           </div>
         </div>
@@ -168,7 +171,7 @@ page_header([
       </div>
 
       <?php if ($paisa !== []): ?>
-      <h2>किराये / ख़रीद पर</h2>
+      <h2><?= h(t('किराये / ख़रीद पर')) ?></h2>
       <div class="offers">
         <?php foreach ($paisa as $o): ?>
         <div class="offer">
@@ -179,7 +182,7 @@ page_header([
             <div class="o-type"><?= h(offer_label($o['offer_type'])) ?></div>
           </div>
           <?php if (nz($o['watch_link'] ?? null) !== null): ?>
-            <div class="o-since"><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank">देखें ↗</a></div>
+            <div class="o-since"><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank"><?= h(t('देखें ↗')) ?></a></div>
           <?php endif; ?>
         </div>
         <?php endforeach; ?>
@@ -190,36 +193,36 @@ page_header([
 </div>
 
 <?php if (nz($title['overview'] ?? null) !== null): ?>
-<h2>कहानी</h2>
+<h2><?= h(t('कहानी')) ?></h2>
 <p><?= h($title['overview']) ?></p>
 <?php endif; ?>
 
 <?php if ($spells !== []): ?>
-<h2>उपलब्धता का इतिहास</h2>
-<p class="dim small">यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।</p>
+<h2><?= h(t('उपलब्धता का इतिहास')) ?></h2>
+<p class="dim small"><?= h(t('यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।')) ?></p>
 <table class="spells">
-  <tr><th>Platform</th><th>कैसे</th><th>कब से</th><th>कब तक</th></tr>
+  <tr><th>Platform</th><th><?= h(t('कैसे')) ?></th><th><?= h(t('कब से')) ?></th><th><?= h(t('कब तक')) ?></th></tr>
   <?php foreach ($spells as $s): ?>
   <tr>
     <td><a href="/platform/<?= h(rawurlencode($s['pslug'])) ?>"><?= h($s['name']) ?></a></td>
     <td><?= h(offer_label($s['offer_type'])) ?></td>
     <td><?= h(hindi_date($s['first_seen'])) ?></td>
     <td><?= (int) $s['is_current'] === 1
-            ? '<span class="tag-now">अभी भी है</span>'
-            : '<span class="tag-gone">' . h(hindi_date($s['last_seen'])) . ' तक</span>' ?></td>
+            ? '<span class="tag-now">' . h(t('अभी भी है')) . '</span>'
+            : '<span class="tag-gone">' . h(tf('%s तक', hindi_date($s['last_seen']))) . '</span>' ?></td>
   </tr>
   <?php endforeach; ?>
 </table>
 
 <?php if ($events !== []): ?>
-<h2>क्या-क्या बदला</h2>
+<h2><?= h(t('क्या-क्या बदला')) ?></h2>
 <ul class="history">
   <?php foreach ($events as $e): ?>
   <li class="<?= $e['change_type'] === 'added' ? 'now' : 'gone' ?>">
     <span class="h-when"><?= h(hindi_date($e['changed_on'])) ?></span> —
-    <b><?= h($e['name']) ?></b> <?= $e['change_type'] === 'added'
-        ? 'पर आई (' . h(offer_label($e['offer_type'])) . ')'
-        : 'से हटी' ?>
+    <?= $e['change_type'] === 'added'
+        ? tf('%s पर आई (%s)', '<b>' . h($e['name']) . '</b>', h(offer_label($e['offer_type'])))
+        : tf('%s से हटी', '<b>' . h($e['name']) . '</b>') ?>
   </li>
   <?php endforeach; ?>
 </ul>
@@ -228,8 +231,7 @@ page_header([
 
 <?php if ($langs !== []): ?>
 <div class="note">
-  ऊपर लिखी भाषाएँ इस <?= h(media_label($title['media_type'])) ?> की मूल/बोली गई भाषाएँ हैं।
-  किस platform पर कौन सी ऑडियो (dub) मिलेगी — यह जानकारी जल्द जुड़ेगी।
+  <?= h(tf('ऊपर लिखी भाषाएँ इस %s की मूल/बोली गई भाषाएँ हैं। किस platform पर कौन सी ऑडियो (dub) मिलेगी — यह जानकारी जल्द जुड़ेगी।', media_label($title['media_type']))) ?>
 </div>
 <?php endif; ?>
 

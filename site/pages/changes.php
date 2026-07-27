@@ -105,13 +105,13 @@ foreach ($rows as $r) {
 // ---- meta ---------------------------------------------------------------------
 $pname = $prov !== null ? $prov['name'] : null;
 if ($is_added) {
-    $h1   = $pname !== null ? $pname . ' पर इस हफ़्ते नया आया' : 'इस हफ़्ते OTT पर नया आया';
-    $desc = ($pname ?? 'Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV') . ' पर पिछले '
-          . $days . ' दिनों में कौन सी फिल्में और वेब सीरीज़ नई आईं — रोज़ अपडेट, OTT गुरु पर।';
+    $h1   = $pname !== null ? tf('%s पर इस हफ़्ते नया आया', $pname) : t('इस हफ़्ते OTT पर नया आया');
+    $desc = tf('%s पर पिछले %d दिनों में कौन सी फिल्में और वेब सीरीज़ नई आईं — रोज़ अपडेट, OTT गुरु पर।',
+        $pname ?? 'Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV', $days);
 } else {
-    $h1   = $pname !== null ? $pname . ' से हाल में क्या हटा' : 'OTT से हाल में क्या हटा';
-    $desc = ($pname ?? 'OTT platforms') . ' से पिछले ' . $days
-          . ' दिनों में कौन सी फिल्में हटीं और अब कहाँ देख सकते हैं — OTT गुरु पर।';
+    $h1   = $pname !== null ? tf('%s से हाल में क्या हटा', $pname) : t('OTT से हाल में क्या हटा');
+    $desc = tf('%s से पिछले %d दिनों में कौन सी फिल्में हटीं और अब कहाँ देख सकते हैं — OTT गुरु पर।',
+        $pname ?? 'OTT platforms', $days);
 }
 
 $self = '/' . ($is_added ? 'naya' : 'hata') . ($prov !== null ? '/' . $prov['slug'] : '');
@@ -131,18 +131,18 @@ page_header([
 ?>
 
 <h1><?= h($h1) ?></h1>
-<p class="dim">पिछले <?= $days ?> दिन ·
+<p class="dim"><?= h(tf('पिछले %d दिन', $days)) ?> ·
   <?php if ($prov !== null): ?>
-    <a href="<?= h(provider_url($prov)) ?>"><?= h($prov['name']) ?> पर पूरी सूची →</a>
+    <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s पर पूरी सूची →', $prov['name'])) ?></a>
   <?php else: ?>
-    उपलब्धता रोज़ जाँची जाती है
+    <?= h(t('उपलब्धता रोज़ जाँची जाती है')) ?>
   <?php endif; ?>
 </p>
 
 <?php if ($rows === []): ?>
   <div class="offer-none">
-    पिछले <?= $days ?> दिनों में यहाँ कोई बदलाव दर्ज नहीं हुआ।
-    <a href="/">होमपेज पर चलिए</a>
+    <?= h(tf('पिछले %d दिनों में यहाँ कोई बदलाव दर्ज नहीं हुआ।', $days)) ?>
+    <a href="/"><?= h(t('होमपेज पर चलिए')) ?></a>
   </div>
 <?php endif; ?>
 
@@ -153,21 +153,21 @@ page_header([
   <a class="card" href="<?= h(title_url($t)) ?>">
     <?php $img = tmdb_img($t['poster_path'], 'w342'); ?>
     <?php if ($img !== null): ?>
-      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h($t['title']) ?> का poster">
+      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>">
     <?php else: ?>
       <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
     <?php endif; ?>
     <span class="card-t"><?= h($t['title']) ?></span>
-    <?php $pjagah = (int) $t['pkitne'] > 1 ? (int) $t['pkitne'] . ' platforms' : $t['pname']; ?>
+    <?php $pjagah = (int) $t['pkitne'] > 1 ? tf('%d platforms', (int) $t['pkitne']) : $t['pname']; ?>
     <?php if ($is_added): ?>
-      <span class="newdate"><?= h($pjagah) ?> पर आई</span>
+      <span class="newdate"><?= h(tf('%s पर आई', $pjagah)) ?></span>
     <?php else: ?>
-      <span class="gonedate"><?= h($pjagah) ?> से हटी</span>
+      <span class="gonedate"><?= h(tf('%s से हटी', $pjagah)) ?></span>
       <?php $ab = $ab_kahan[(int) $t['tid']] ?? []; ?>
       <?php if ($ab !== []): ?>
-        <span class="newdate">अब <?= h(implode(', ', array_column($ab, 'name'))) ?> पर</span>
+        <span class="newdate"><?= h(tf('अब %s पर', implode(', ', array_column($ab, 'name')))) ?></span>
       <?php else: ?>
-        <span class="card-y">अभी कहीं और नहीं</span>
+        <span class="card-y"><?= h(t('अभी कहीं और नहीं')) ?></span>
       <?php endif; ?>
     <?php endif; ?>
   </a>
@@ -176,14 +176,14 @@ page_header([
 <?php endforeach; ?>
 
 <?php if ($badli !== []): ?>
-<h2>एक platform से दूसरे पर गईं</h2>
-<p class="dim small">एक ही दिन एक जगह से हटीं और दूसरी पर आ गईं — plan बदलने से पहले यह देख लीजिए।</p>
+<h2><?= h(t('एक platform से दूसरे पर गईं')) ?></h2>
+<p class="dim small"><?= h(t('एक ही दिन एक जगह से हटीं और दूसरी पर आ गईं — plan बदलने से पहले यह देख लीजिए।')) ?></p>
 <ul class="history">
   <?php foreach ($badli as $b): ?>
   <li class="now">
     <span class="h-when"><?= h(hindi_date($b['changed_on'])) ?></span> —
     <a href="<?= h(title_url($b)) ?>"><b><?= h($b['title']) ?></b></a>:
-    <?= h($b['gaya_yahan_se']) ?> से <b><?= h($b['aaya_yahan']) ?></b> पर
+    <?= tf('%1$s से %2$s पर', h($b['gaya_yahan_se']), '<b>' . h($b['aaya_yahan']) . '</b>') ?>
   </li>
   <?php endforeach; ?>
 </ul>
@@ -191,8 +191,8 @@ page_header([
 
 <?php if ($prov === null): ?>
 <div class="note">
-  किसी एक platform का हिसाब चाहिए? platform के पन्ने पर "नया आया / हटा" के लिंक हैं —
-  <a href="/">होमपेज से platform चुनिए</a>।
+  <?= h(t('किसी एक platform का हिसाब चाहिए? platform के पन्ने पर "नया आया / हटा" के लिंक हैं —')) ?>
+  <a href="/"><?= h(t('होमपेज से platform चुनिए')) ?></a>
 </div>
 <?php endif; ?>
 

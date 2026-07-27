@@ -61,8 +61,8 @@ $titles = all($PDO, "
 
 // ---- meta ---------------------------------------------------------------------
 $bhasha     = lang_label($want_lang);
-$kya        = $want_type === 'tv' ? 'वेब सीरीज़' : 'फिल्में';
-$h1         = $prov['name'] . ' पर ' . $bhasha . ' ' . $kya;
+$kya        = $want_type === 'tv' ? t('वेब सीरीज़ (सूची)') : t('फिल्में');
+$h1         = tf('%1$s पर %2$s %3$s', $prov['name'], $bhasha, $kya);
 $self       = provider_url($prov) . '/' . $lang_slug . '-' . ($want_type === 'tv' ? 'series' : 'movies');
 $dusra_type = $want_type === 'tv' ? 'movies' : 'series';
 
@@ -82,8 +82,8 @@ $dusra_total = (int) scalar($PDO, "
 
 page_header([
     'title'       => $h1 . ' (' . $total . ')',
-    'description' => $prov['name'] . ' India पर अभी ' . $total . ' ' . $bhasha . ' ' . $kya
-                   . ' सब्सक्रिप्शन में हैं — पूरी सूची, रोज़ अपडेट। OTT गुरु पर।',
+    'description' => tf('%1$s India पर अभी %2$d %3$s %4$s सब्सक्रिप्शन में हैं — पूरी सूची, रोज़ अपडेट। OTT गुरु पर।',
+                        $prov['name'], $total, $bhasha, $kya),
     'canonical'   => $self,
     'image'       => tmdb_img($prov['logo_path'], 'w154'),
     'noindex'     => $total < 5 || $page > 1,   // बहुत छोटा या paginated पन्ना index न हो
@@ -98,21 +98,21 @@ page_header([
 
 <div class="p-head">
   <?php $logo = tmdb_img($prov['logo_path'], 'w154'); ?>
-  <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> का logo"><?php endif; ?>
+  <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> logo"><?php endif; ?>
   <div>
     <h1><?= h($h1) ?></h1>
-    <p class="dim" style="margin:0">अभी <b><?= $total ?></b> · रोज़ अपडेट ·
-      <a href="<?= h(provider_url($prov)) ?>"><?= h($prov['name']) ?> की पूरी सूची →</a></p>
+    <p class="dim" style="margin:0"><?= tf('अभी %s · रोज़ अपडेट ·', '<b>' . $total . '</b>') ?>
+      <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s की पूरी सूची →', $prov['name'])) ?></a></p>
   </div>
 </div>
 
 <div class="tabs">
   <span class="tabs-label dim small"><?= h($bhasha) ?>:</span>
   <a class="<?= $want_type === 'movie' ? 'on' : '' ?>"
-     href="<?= h(provider_url($prov) . '/' . $lang_slug . '-movies') ?>">फिल्में</a>
+     href="<?= h(provider_url($prov) . '/' . $lang_slug . '-movies') ?>"><?= h(t('फिल्में (tab)')) ?></a>
   <?php if ($dusra_total > 0 || $want_type === 'tv'): ?>
   <a class="<?= $want_type === 'tv' ? 'on' : '' ?>"
-     href="<?= h(provider_url($prov) . '/' . $lang_slug . '-series') ?>">वेब सीरीज़</a>
+     href="<?= h(provider_url($prov) . '/' . $lang_slug . '-series') ?>"><?= h(t('वेब सीरीज़ (tab)')) ?></a>
   <?php endif; ?>
 </div>
 
@@ -120,16 +120,15 @@ page_header([
 
 <?php if ($pages > 1): ?>
 <div class="pager">
-  <?php if ($page > 1): ?><a href="<?= h($self . ($page - 1 > 1 ? '?page=' . ($page - 1) : '')) ?>">← पिछला</a><?php endif; ?>
-  <span class="here">पन्ना <?= $page ?> / <?= $pages ?></span>
-  <?php if ($page < $pages): ?><a href="<?= h($self . '?page=' . ($page + 1)) ?>">अगला →</a><?php endif; ?>
+  <?php if ($page > 1): ?><a href="<?= h($self . ($page - 1 > 1 ? '?page=' . ($page - 1) : '')) ?>"><?= h(t('← पिछला')) ?></a><?php endif; ?>
+  <span class="here"><?= h(tf('पन्ना %d / %d', $page, $pages)) ?></span>
+  <?php if ($page < $pages): ?><a href="<?= h($self . '?page=' . ($page + 1)) ?>"><?= h(t('अगला →')) ?></a><?php endif; ?>
 </div>
 <?php endif; ?>
 
 <div class="note">
-  यह सूची <?= h($bhasha) ?> में <b>बनी</b> <?= h($kya) ?> दिखाती है (मूल या बोली गई भाषा)।
-  "<?= h($prov['name']) ?> पर <?= h($bhasha) ?> ऑडियो (dub) मिलेगी या नहीं" — वह जानकारी
-  अलग है और जल्द जुड़ेगी।
+  <?= h(tf('यह सूची %1$s में बनी %2$s दिखाती है (मूल या बोली गई भाषा)। "%3$s पर %1$s ऑडियो (dub) मिलेगी या नहीं" — वह जानकारी अलग है और जल्द जुड़ेगी।',
+      $bhasha, $kya, $prov['name'])) ?>
 </div>
 
 <?php page_footer(); ?>

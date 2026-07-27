@@ -24,8 +24,18 @@ function fail(string $msg, int $code = 500): never
     exit(1);
 }
 
+// ---------------------------------------------------------------- UI की भाषा
+// default अंग्रेज़ी; ?lang=hi से हिंदी। पसंद cookie में साल भर याद रहती है।
+$__lang = $_GET['lang'] ?? ($_COOKIE['ottg_lang'] ?? 'en');
+$__lang = $__lang === 'hi' ? 'hi' : 'en';
+define('OTT_LANG', $__lang);
+if (isset($_GET['lang'])) {
+    @setcookie('ottg_lang', $__lang, time() + 31536000, '/');
+}
+
 require OTT_ROOT . '/lib/util.php';
 require OTT_ROOT . '/lib/db.php';
+require OTT_ROOT . '/site/i18n.php';
 require OTT_ROOT . '/site/helpers.php';
 
 $PDO = db_connect($CFG['db']);
