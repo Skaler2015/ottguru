@@ -32,9 +32,13 @@ $prov_args = $prov !== null ? [(int) $prov['id']] : [];
 // किराये से हटना भी हटना ही है
 $offer_sql = $is_added ? " AND c.offer_type IN ('flatrate','ads','free') " : '';
 
+// एक title एक ही दिन कई platforms पर आए/हटे तो card एक ही बने —
+// GROUP BY से platforms की गिनती साथ आती है (Uncharted 5 बार नहीं दिखेगी)
 $rows = all($PDO, "
-    SELECT DISTINCT t.id AS tid, t.slug, t.title, t.release_year, t.poster_path,
-           t.media_type, c.changed_on, c.offer_type, p.name AS pname, p.slug AS pslug
+    SELECT t.id AS tid, t.slug, t.title, t.release_year, t.poster_path,
+           t.media_type, c.changed_on,
+           MIN(p.name) AS pname,
+           COUNT(DISTINCT c.provider_id) AS pkitne
       FROM availability_changes c
       JOIN titles t    ON t.id = c.title_id
       JOIN providers p ON p.id = c.provider_id
@@ -43,7 +47,8 @@ $rows = all($PDO, "
        $offer_sql
        $prov_sql
        AND c.changed_on >= (CURDATE() - INTERVAL $days DAY)
-     ORDER BY c.changed_on DESC
+     GROUP BY t.id, c.changed_on
+     ORDER BY c.changed_on DESC, MAX(t.popularity) DESC
      LIMIT 200",
     array_merge([$country, $want_mode], $prov_args));
 
@@ -153,10 +158,11 @@ page_header([
       <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
     <?php endif; ?>
     <span class="card-t"><?= h($t['title']) ?></span>
+    <?php $pjagah = (int) $t['pkitne'] > 1 ? (int) $t['pkitne'] . ' platforms' : $t['pname']; ?>
     <?php if ($is_added): ?>
-      <span class="newdate"><?= h($t['pname']) ?> पर आई</span>
+      <span class="newdate"><?= h($pjagah) ?> पर आई</span>
     <?php else: ?>
-      <span class="gonedate"><?= h($t['pname']) ?> से हटी</span>
+      <span class="gonedate"><?= h($pjagah) ?> से हटी</span>
       <?php $ab = $ab_kahan[(int) $t['tid']] ?? []; ?>
       <?php if ($ab !== []): ?>
         <span class="newdate">अब <?= h(implode(', ', array_column($ab, 'name'))) ?> पर</span>

@@ -14,7 +14,7 @@ $stats = one($PDO, "
       (SELECT COUNT(*) FROM providers WHERE is_active = 1)                     AS platforms,
       (SELECT COUNT(*) FROM availability WHERE is_current = 1)                 AS abhi_uplabdh,
       (SELECT COUNT(*) FROM availability_changes)                              AS itihas,
-      (SELECT COUNT(*) FROM availability_changes
+      (SELECT COUNT(DISTINCT title_id) FROM availability_changes
         WHERE changed_on >= (CURDATE() - INTERVAL 7 DAY) AND change_type='added') AS is_hafte_naya") ?? [];
 
 // ---- platforms जिन पर सच में कुछ है ------------------------------------------
@@ -32,9 +32,13 @@ $provs = all($PDO, "
     [$country]);
 
 // ---- इस हफ़्ते नया (query 4 का सब-platform रूप) --------------------------------
+// एक title कई platforms पर एक साथ आए (जैसे Uncharted) तो card एक ही बने —
+// इसलिए title पर GROUP और platforms की गिनती साथ में
 $naya = all($PDO, "
-    SELECT DISTINCT t.slug, t.title, t.release_year, t.poster_path, t.media_type,
-           c.changed_on, p.name AS pname
+    SELECT t.slug, t.title, t.release_year, t.poster_path, t.media_type,
+           MAX(c.changed_on) AS changed_on,
+           MIN(p.name)       AS pname,
+           COUNT(DISTINCT c.provider_id) AS pkitne
       FROM availability_changes c
       JOIN titles t    ON t.id = c.title_id
       JOIN providers p ON p.id = c.provider_id
@@ -42,7 +46,8 @@ $naya = all($PDO, "
        AND c.change_type = 'added'
        AND c.offer_type IN ('flatrate','ads','free')
        AND c.changed_on >= (CURDATE() - INTERVAL 7 DAY)
-     ORDER BY c.changed_on DESC
+     GROUP BY t.id
+     ORDER BY changed_on DESC, MAX(t.popularity) DESC
      LIMIT 12",
     [$country]);
 
@@ -108,7 +113,9 @@ page_header([
       <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
     <?php endif; ?>
     <span class="card-t"><?= h($t['title']) ?></span>
-    <span class="newdate"><?= h($t['pname']) ?> पर</span>
+    <span class="newdate"><?= (int) $t['pkitne'] > 1
+        ? (int) $t['pkitne'] . ' platforms पर'
+        : h($t['pname']) . ' पर' ?></span>
   </a>
   <?php endforeach; ?>
 </div>
