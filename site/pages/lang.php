@@ -96,13 +96,18 @@ page_header([
 ]);
 ?>
 
-<div class="p-head">
-  <?php $logo = tmdb_img($prov['logo_path'], 'w154'); ?>
-  <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> logo"><?php endif; ?>
-  <div>
-    <h1><?= h($h1) ?></h1>
-    <p class="dim" style="margin:0"><?= tf('अभी %s · रोज़ अपडेट ·', '<b>' . $total . '</b>') ?>
-      <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s की पूरी सूची →', $prov['name'])) ?></a></p>
+<div class="phead">
+  <div class="phead-top">
+    <?php $logo = tmdb_img($prov['logo_path'], 'w154'); ?>
+    <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> logo"><?php else: ?><span class="lg"><?= h(mb_substr($prov['name'], 0, 2, 'UTF-8')) ?></span><?php endif; ?>
+    <div>
+      <h1><?= h($h1) ?></h1>
+      <div class="sub"><?= tf('अभी %s · रोज़ अपडेट', '<b>' . $total . '</b>') ?></div>
+    </div>
+  </div>
+  <div class="sublinks">
+    <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s की पूरी सूची →', $prov['name'])) ?></a>
+    <a href="/naya/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('इस हफ़्ते नया आया →')) ?></a>
   </div>
 </div>
 
