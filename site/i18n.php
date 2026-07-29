@@ -143,6 +143,7 @@ $GLOBALS['__EN'] = [
     // ---- भाषा पन्ना ----
     '%1$s पर %2$s %3$s' => '%2$s %3$s on %1$s',
     'अभी %s · रोज़ अपडेट ·' => '%s right now · updated daily ·',
+    'अभी %s · रोज़ अपडेट'  => '%s now · updated daily',
     '%s की पूरी सूची →'  => 'Full %s list →',
     'यह सूची %1$s में बनी %2$s दिखाती है (मूल या बोली गई भाषा)। "%3$s पर %1$s ऑडियो (dub) मिलेगी या नहीं" — वह जानकारी अलग है और जल्द जुड़ेगी।'
         => 'This list shows %2$s made in %1$s (original or spoken language). Whether %3$s offers %1$s audio (dub) is a separate question — that info is coming soon.',
