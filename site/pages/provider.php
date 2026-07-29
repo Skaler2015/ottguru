@@ -100,6 +100,30 @@ foreach (all($PDO, "
 }
 $bhasha_links = array_slice($bhasha_links, 0, 12);
 
+// ---- header के लिए stats: फिल्म/सीरीज़ गिनती + इस हफ़्ते जुड़ीं/हटीं ----------------
+$by_type = [];
+foreach (all($PDO, "
+    SELECT t.media_type, COUNT(DISTINCT t.id) AS n
+      FROM availability a JOIN titles t ON t.id = a.title_id
+     WHERE a.provider_id = ? AND a.country = ? AND a.is_current = 1
+       AND a.offer_type IN ('flatrate','ads','free')
+     GROUP BY t.media_type", [(int) $prov['id'], $country]) as $r) {
+    $by_type[$r['media_type']] = (int) $r['n'];
+}
+$n_movies = $by_type['movie'] ?? 0;
+$n_series = $by_type['tv'] ?? 0;
+$grand    = $n_movies + $n_series;
+
+$chg7 = one($PDO, "
+    SELECT
+      (SELECT COUNT(DISTINCT title_id) FROM availability_changes
+        WHERE provider_id = ? AND country = ? AND change_type = 'added'
+          AND changed_on >= (CURDATE() - INTERVAL 7 DAY)) AS added,
+      (SELECT COUNT(DISTINCT title_id) FROM availability_changes
+        WHERE provider_id = ? AND country = ? AND change_type = 'removed'
+          AND changed_on >= (CURDATE() - INTERVAL 7 DAY)) AS removed",
+    [(int) $prov['id'], $country, (int) $prov['id'], $country]) ?? ['added' => 0, 'removed' => 0];
+
 // ---- meta ---------------------------------------------------------------------
 $type_label = $type === 'movie' ? t('फिल्में') : ($type === 'tv' ? t('वेब सीरीज़ (सूची)') : t('फिल्में और वेब सीरीज़'));
 $desc = tf('%s India पर अभी %d %s सब्सक्रिप्शन में उपलब्ध हैं। इस हफ़्ते क्या नया आया और क्या हटा — रोज़ अपडेट, OTT गुरु पर।',
@@ -122,39 +146,44 @@ page_header([
 ]);
 ?>
 
-<div class="p-head">
-  <?php $logo = tmdb_img($prov['logo_path'], 'w154'); ?>
-  <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> logo"><?php endif; ?>
-  <div>
-    <h1><?= h(tf('%s पर क्या-क्या है', $prov['name'])) ?></h1>
-    <p class="dim" style="margin:0"><?= tf('भारत में अभी %s %s सब्सक्रिप्शन/मुफ़्त में · रोज़ अपडेट होता है',
-        '<b>' . $total . '</b>', h($type_label)) ?></p>
-    <div class="sublinks">
-      <a href="/naya/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('इस हफ़्ते नया आया →')) ?></a>
-      <a href="/hata/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('हाल में क्या हटा →')) ?></a>
-      <?php foreach ($bhasha_links as $bl): ?>
-        <a href="<?= h($bl['url']) ?>"><?= h($bl['label']) ?></a>
-      <?php endforeach; ?>
+<div class="phead">
+  <div class="phead-top">
+    <?php $logo = tmdb_img($prov['logo_path'], 'w154'); ?>
+    <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($prov['name']) ?> logo"><?php else: ?><span class="lg"><?= h(mb_substr($prov['name'], 0, 2, 'UTF-8')) ?></span><?php endif; ?>
+    <div>
+      <h1><?= h($prov['name']) ?></h1>
+      <div class="sub"><?= OTT_LANG === 'hi' ? 'भारत · रोज़ अपडेट होता है' : 'India · updated daily' ?></div>
     </div>
+  </div>
+  <div class="pstats">
+    <div><div class="v"><?= $grand ?></div><div class="k">Titles</div></div>
+    <div><div class="v"><?= $n_movies ?></div><div class="k"><?= h(t('फिल्में (tab)')) ?></div></div>
+    <div><div class="v"><?= $n_series ?></div><div class="k"><?= h(t('वेब सीरीज़ (tab)')) ?></div></div>
+    <div><div class="v <?= (int) $chg7['added'] > 0 ? 'up' : '' ?>"><?= (int) $chg7['added'] > 0 ? '+' . (int) $chg7['added'] : '0' ?></div><div class="k"><?= h(t('इस हफ़्ते नई आईं')) ?></div></div>
+    <div><div class="v <?= (int) $chg7['removed'] > 0 ? 'down' : '' ?>"><?= (int) $chg7['removed'] > 0 ? '−' . (int) $chg7['removed'] : '0' ?></div><div class="k"><?= h(t('इस हफ़्ते हटीं')) ?></div></div>
+  </div>
+  <div class="sublinks">
+    <a href="/naya/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('इस हफ़्ते नया आया →')) ?></a>
+    <a href="/hata/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('हाल में क्या हटा →')) ?></a>
+    <?php foreach ($bhasha_links as $bl): ?>
+      <a href="<?= h($bl['url']) ?>"><?= h($bl['label']) ?></a>
+    <?php endforeach; ?>
   </div>
 </div>
 
 <?php if ($naya !== []): ?>
-<h2><?= h(t('इस हफ़्ते नया आया')) ?></h2>
-<div class="newrow">
-  <?php foreach ($naya as $t): ?>
-  <a class="card" href="<?= h(title_url($t)) ?>">
-    <?php $img = tmdb_img($t['poster_path'], 'w342'); ?>
-    <?php if ($img !== null): ?>
-      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>">
-    <?php else: ?>
-      <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
-    <?php endif; ?>
-    <span class="card-t"><?= h($t['title']) ?></span>
-    <span class="newdate"><?= h(tf('%s को आई', hindi_date($t['changed_on']))) ?></span>
-  </a>
-  <?php endforeach; ?>
-</div>
+<section>
+  <div class="head"><div><span class="eyebrow"><?= OTT_LANG === 'hi' ? 'पिछले 7 दिन' : 'Last 7 days' ?></span><h2><?= h(t('इस हफ़्ते नया आया')) ?></h2></div>
+    <a class="link" href="/naya/<?= h(rawurlencode($prov['slug'])) ?>"><?= h(t('सब देखिए →')) ?></a></div>
+  <div class="rail">
+    <?php foreach ($naya as $t): $img = tmdb_img($t['poster_path'], 'w342'); ?>
+    <a class="pcard" href="<?= h(title_url($t)) ?>">
+      <?php if ($img !== null): ?><img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>"><?php else: ?><span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span><?php endif; ?>
+      <span class="ov"><span class="t"><?= h($t['title']) ?></span><span class="tag g"><?= h(tf('%s को आई', hindi_date($t['changed_on']))) ?></span></span>
+    </a>
+    <?php endforeach; ?>
+  </div>
+</section>
 <?php endif; ?>
 
 <h2><?= h(t('पूरी सूची')) ?></h2>
