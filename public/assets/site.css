@@ -224,6 +224,29 @@ section, .sec{margin-top:44px}
 .history .h-when{color:var(--ink3);font-size:13px;font-family:var(--mono)}
 .note{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 16px;color:var(--ink2);font-size:14px;margin-top:12px}
 
+/* animated availability timeline — हमारी USP का हीरो visual */
+.tlwrap{border:1px solid var(--line);border-radius:var(--r);margin-top:12px;padding:28px 26px;
+  background:linear-gradient(180deg,rgba(22,29,41,.6),rgba(8,11,18,.25))}
+.timeline{position:relative;padding-left:6px}
+.tline{position:absolute;left:14px;top:8px;bottom:14px;width:2px;background:rgba(255,255,255,.08);overflow:hidden;border-radius:2px}
+.tline i{position:absolute;inset:0;background:var(--grad);transform:scaleY(0);transform-origin:top;transition:transform 1.3s ease}
+.tlwrap.in .tline i{transform:scaleY(1)}
+.tev{position:relative;padding:0 0 22px 42px;opacity:0;transform:translateX(-8px);transition:.5s ease}
+.tlwrap.in .tev{opacity:1;transform:none}
+.tev:nth-child(2){transition-delay:.10s}.tev:nth-child(3){transition-delay:.22s}.tev:nth-child(4){transition-delay:.34s}
+.tev:nth-child(5){transition-delay:.46s}.tev:nth-child(6){transition-delay:.58s}.tev:nth-child(7){transition-delay:.70s}
+.tev:nth-child(8){transition-delay:.82s}.tev:nth-child(9){transition-delay:.94s}
+.tev:last-child{padding-bottom:0}
+.tev .node{position:absolute;left:7px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--ink3);z-index:1}
+.tev.add .node{border-color:var(--good);background:rgba(0,210,106,.18)}
+.tev.rm .node{border-color:var(--pink);background:rgba(255,77,109,.18)}
+.tev.now .node{border-color:var(--blue);background:var(--blue);box-shadow:0 0 0 5px rgba(79,140,255,.2)}
+.tev .when{font-family:var(--mono);font-size:12px;color:var(--ink3)}
+.tev .what{font-size:15px;margin-top:2px} .tev .what b{font-weight:600}
+.tev .tag{font-size:11px;font-family:var(--mono);padding:2px 9px;border-radius:6px;margin-left:8px;white-space:nowrap}
+.tev.add .tag{background:rgba(0,210,106,.14);color:var(--good)}
+.tev.now .tag{background:rgba(79,140,255,.16);color:var(--blue)}
+
 /* ---------------------------------------------------------------- provider / lang page */
 .p-head{display:flex;align-items:center;gap:16px;margin-top:6px}
 .p-head img{width:64px;height:64px;border-radius:16px}

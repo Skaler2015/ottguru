@@ -197,36 +197,44 @@ page_header([
 <p><?= h($title['overview']) ?></p>
 <?php endif; ?>
 
-<?php if ($spells !== []): ?>
+<?php
+// ---- इतिहास को एक animated timeline में: रिलीज़ → हर बदलाव → अभी ----------------
+$tl = [];
+if (nz($title['release_date'] ?? null) !== null) {
+    $tl[] = ['when' => $title['release_date'], 'kind' => 'rel', 'html' => '<b>' . h(t('रिलीज़ हुई')) . '</b>'];
+}
+foreach (array_reverse($events) as $e) {   // $events DESC है → ASC कर लेते हैं
+    if ($e['change_type'] === 'added') {
+        $tl[] = ['when' => $e['changed_on'], 'kind' => 'add',
+                 'html' => tf('%s पर आई', '<b>' . h($e['name']) . '</b>'),
+                 'tag'  => offer_label($e['offer_type'])];
+    } else {
+        $tl[] = ['when' => $e['changed_on'], 'kind' => 'rm',
+                 'html' => tf('%s से हटी', '<b>' . h($e['name']) . '</b>')];
+    }
+}
+$now_names = array_values(array_unique(array_map(fn ($o) => $o['name'], $stream)));
+if ($now_names !== []) {
+    $tl[] = ['when' => null, 'kind' => 'now',
+             'html' => tf('अभी %s पर', '<b>' . h(implode(', ', $now_names)) . '</b>'),
+             'tag'  => t('लाइव')];
+}
+?>
+<?php if ($tl !== []): ?>
 <h2><?= h(t('उपलब्धता का इतिहास')) ?></h2>
 <p class="dim small"><?= h(t('यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।')) ?></p>
-<table class="spells">
-  <tr><th>Platform</th><th><?= h(t('कैसे')) ?></th><th><?= h(t('कब से')) ?></th><th><?= h(t('कब तक')) ?></th></tr>
-  <?php foreach ($spells as $s): ?>
-  <tr>
-    <td><a href="/platform/<?= h(rawurlencode($s['pslug'])) ?>"><?= h($s['name']) ?></a></td>
-    <td><?= h(offer_label($s['offer_type'])) ?></td>
-    <td><?= h(hindi_date($s['first_seen'])) ?></td>
-    <td><?= (int) $s['is_current'] === 1
-            ? '<span class="tag-now">' . h(t('अभी भी है')) . '</span>'
-            : '<span class="tag-gone">' . h(tf('%s तक', hindi_date($s['last_seen']))) . '</span>' ?></td>
-  </tr>
-  <?php endforeach; ?>
-</table>
-
-<?php if ($events !== []): ?>
-<h2><?= h(t('क्या-क्या बदला')) ?></h2>
-<ul class="history">
-  <?php foreach ($events as $e): ?>
-  <li class="<?= $e['change_type'] === 'added' ? 'now' : 'gone' ?>">
-    <span class="h-when"><?= h(hindi_date($e['changed_on'])) ?></span> —
-    <?= $e['change_type'] === 'added'
-        ? tf('%s पर आई (%s)', '<b>' . h($e['name']) . '</b>', h(offer_label($e['offer_type'])))
-        : tf('%s से हटी', '<b>' . h($e['name']) . '</b>') ?>
-  </li>
-  <?php endforeach; ?>
-</ul>
-<?php endif; ?>
+<div class="tlwrap" data-reveal>
+  <div class="timeline">
+    <div class="tline"><i></i></div>
+    <?php foreach ($tl as $n): ?>
+    <div class="tev <?= h($n['kind'] === 'rel' ? '' : $n['kind']) ?>">
+      <span class="node"></span>
+      <div class="when"><?= $n['when'] !== null ? h(hindi_date($n['when'])) : h(t('आज')) ?></div>
+      <div class="what"><?= $n['html'] ?><?php if (!empty($n['tag'])): ?><span class="tag"><?= h($n['tag']) ?></span><?php endif; ?></div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
 <?php endif; ?>
 
 <?php if ($langs !== []): ?>
@@ -235,4 +243,12 @@ page_header([
 </div>
 <?php endif; ?>
 
+<script>
+(function(){
+  var els = document.querySelectorAll('[data-reveal]');
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches){els.forEach(function(e){e.classList.add('in');});return;}
+  var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.2});
+  els.forEach(function(e){io.observe(e);});
+})();
+</script>
 <?php page_footer(); ?>
