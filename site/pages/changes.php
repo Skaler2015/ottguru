@@ -130,63 +130,75 @@ page_header([
 ]);
 ?>
 
-<h1><?= h($h1) ?></h1>
-<p class="dim"><?= h(tf('पिछले %d दिन', $days)) ?> ·
-  <?php if ($prov !== null): ?>
-    <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s पर पूरी सूची →', $prov['name'])) ?></a>
-  <?php else: ?>
-    <?= h(t('उपलब्धता रोज़ जाँची जाती है')) ?>
-  <?php endif; ?>
-</p>
+<div style="margin-top:8px">
+  <span class="eyebrow"><?= h($is_added ? t('नया आया') : t('क्या हटा')) ?> · <?= h(tf('पिछले %d दिन', $days)) ?></span>
+  <h1 style="margin-top:8px"><?= h($h1) ?></h1>
+  <p class="dim" style="margin-top:8px">
+    <?php if ($prov !== null): ?>
+      <a href="<?= h(provider_url($prov)) ?>"><?= h(tf('%s पर पूरी सूची →', $prov['name'])) ?></a>
+    <?php else: ?>
+      <?= h(t('उपलब्धता रोज़ जाँची जाती है')) ?>
+    <?php endif; ?>
+  </p>
+</div>
 
 <?php if ($rows === []): ?>
-  <div class="offer-none">
+  <div class="offer-none" style="margin-top:16px">
     <?= h(tf('पिछले %d दिनों में यहाँ कोई बदलाव दर्ज नहीं हुआ।', $days)) ?>
     <a href="/"><?= h(t('होमपेज पर चलिए')) ?></a>
   </div>
 <?php endif; ?>
 
 <?php foreach ($by_date as $date => $din_ke): ?>
-<h2><?= h(hindi_date($date)) ?></h2>
-<div class="newrow">
-  <?php foreach ($din_ke as $t): ?>
-  <a class="card" href="<?= h(title_url($t)) ?>">
-    <?php $img = tmdb_img($t['poster_path'], 'w342'); ?>
-    <?php if ($img !== null): ?>
-      <img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>">
-    <?php else: ?>
-      <span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span>
-    <?php endif; ?>
-    <span class="card-t"><?= h($t['title']) ?></span>
-    <?php $pjagah = (int) $t['pkitne'] > 1 ? tf('%d platforms', (int) $t['pkitne']) : $t['pname']; ?>
-    <?php if ($is_added): ?>
-      <span class="newdate"><?= h(tf('%s पर आई', $pjagah)) ?></span>
-    <?php else: ?>
-      <span class="gonedate"><?= h(tf('%s से हटी', $pjagah)) ?></span>
-      <?php $ab = $ab_kahan[(int) $t['tid']] ?? []; ?>
-      <?php if ($ab !== []): ?>
-        <span class="newdate"><?= h(tf('अब %s पर', implode(', ', array_column($ab, 'name')))) ?></span>
-      <?php else: ?>
-        <span class="card-y"><?= h(t('अभी कहीं और नहीं')) ?></span>
-      <?php endif; ?>
-    <?php endif; ?>
-  </a>
-  <?php endforeach; ?>
-</div>
+<section>
+  <div class="head"><div>
+    <span class="eyebrow"><?= h(hindi_date($date)) ?></span>
+    <h2 style="font-size:19px"><?= $is_added ? h(tf('%d जुड़ीं', count($din_ke))) : h(tf('%d हटीं', count($din_ke))) ?></h2>
+  </div></div>
+  <div class="rail">
+    <?php foreach ($din_ke as $t): $img = tmdb_img($t['poster_path'], 'w342');
+      $pjagah = (int) $t['pkitne'] > 1 ? tf('%d platforms', (int) $t['pkitne']) : $t['pname']; ?>
+    <a class="pcard" href="<?= h(title_url($t)) ?>">
+      <?php if ($img !== null): ?><img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>"><?php else: ?><span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span><?php endif; ?>
+      <span class="ov">
+        <span class="t"><?= h($t['title']) ?></span>
+        <?php if ($is_added): ?>
+          <span class="tag g"><?= h(tf('%s पर आई', $pjagah)) ?></span>
+        <?php else: ?>
+          <span class="tag p"><?= h(tf('%s से हटी', $pjagah)) ?></span>
+          <?php $ab = $ab_kahan[(int) $t['tid']] ?? []; ?>
+          <?php if ($ab !== []): ?>
+            <span class="tag g"><?= h(tf('अब %s पर', implode(', ', array_column($ab, 'name')))) ?></span>
+          <?php else: ?>
+            <span class="m"><?= h(t('अभी कहीं और नहीं')) ?></span>
+          <?php endif; ?>
+        <?php endif; ?>
+      </span>
+    </a>
+    <?php endforeach; ?>
+  </div>
+</section>
 <?php endforeach; ?>
 
 <?php if ($badli !== []): ?>
-<h2><?= h(t('एक platform से दूसरे पर गईं')) ?></h2>
-<p class="dim small"><?= h(t('एक ही दिन एक जगह से हटीं और दूसरी पर आ गईं — plan बदलने से पहले यह देख लीजिए।')) ?></p>
-<ul class="history">
-  <?php foreach ($badli as $b): ?>
-  <li class="now">
-    <span class="h-when"><?= h(hindi_date($b['changed_on'])) ?></span> —
-    <a href="<?= h(title_url($b)) ?>"><b><?= h($b['title']) ?></b></a>:
-    <?= tf('%1$s से %2$s पर', h($b['gaya_yahan_se']), '<b>' . h($b['aaya_yahan']) . '</b>') ?>
-  </li>
-  <?php endforeach; ?>
-</ul>
+<section>
+  <div class="head"><div>
+    <span class="eyebrow"><?= OTT_LANG === 'hi' ? 'platform बदलीं' : 'switched platform' ?></span>
+    <h2><?= h(t('एक platform से दूसरे पर गईं')) ?></h2>
+    <p class="dim"><?= h(t('एक ही दिन एक जगह से हटीं और दूसरी पर आ गईं — plan बदलने से पहले यह देख लीजिए।')) ?></p>
+  </div></div>
+  <div class="panel">
+    <ul class="history" style="margin:0;border-left-color:var(--line2)">
+      <?php foreach ($badli as $b): ?>
+      <li class="now">
+        <span class="h-when"><?= h(hindi_date($b['changed_on'])) ?></span> —
+        <a href="<?= h(title_url($b)) ?>"><b><?= h($b['title']) ?></b></a>:
+        <?= tf('%1$s से %2$s पर', h($b['gaya_yahan_se']), '<b>' . h($b['aaya_yahan']) . '</b>') ?>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+</section>
 <?php endif; ?>
 
 <?php if ($prov === null): ?>

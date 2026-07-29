@@ -46,6 +46,8 @@ $GLOBALS['__EN'] = [
     '"%s" के लिए कुछ नहीं मिला। नाम की वर्तनी जाँचिए या अंग्रेज़ी में लिखकर देखिए।'
         => 'Nothing found for "%s". Check the spelling, or try the English name.',
     '%d नतीजे'         => '%d results',
+    '%d जुड़ीं'         => '%d added',
+    '%d हटीं'          => '%d removed',
     '%s का poster' => 'Poster of %s',
     'OTT गुरु — कौन सी फिल्म किस platform पर है, और कब से कब तक थी। उपलब्धता रोज़ जाँची जाती है, फिर भी देखने से पहले app में पुष्टि कर लें।'
         => 'OTT Guru — which platform has each movie, and from when to when it was there. Availability is checked daily; still, confirm in the app before watching.',
