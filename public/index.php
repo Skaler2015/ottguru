@@ -43,6 +43,12 @@ if ($seg === []) {
     exit;
 }
 
+// खोज — /search?q=...
+if (count($seg) === 1 && $seg[0] === 'search') {
+    require OTT_ROOT . '/site/pages/search.php';
+    exit;
+}
+
 if (count($seg) === 2 && ($seg[0] === 'movie' || $seg[0] === 'series') && $slug_ok($seg[1])) {
     $want_type = $seg[0] === 'series' ? 'tv' : 'movie';
     $want_slug = $seg[1];

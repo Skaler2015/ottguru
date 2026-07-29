@@ -15,6 +15,37 @@ $GLOBALS['__EN'] = [
     'होम'          => 'Home',
     'नया आया'      => 'New arrivals',
     'क्या हटा'      => 'Removed',
+    'खोजें'         => 'Search',
+    'खोज'          => 'Search',
+
+    // ---- चरण 3: homepage / nav / footer / search ----
+    'रोज़ रात अपने-आप जाँचा जाता है' => 'Auto-checked every night',
+    'खोजिए, तुलना कीजिए और नज़र रखिए — कौन सी फिल्म किस platform पर है, और सबसे ख़ास: <b>कब से कब तक कहाँ थी</b>।'
+        => 'Discover, compare and track — which platform has each title, and the part no one else keeps: <b>where it has been, and when it moved</b>.',
+    'फिल्म, सीरीज़ या platform खोजिए…' => 'Search a movie, series or platform…',
+    'इस हफ़्ते हटीं'    => 'Removed this week',
+    'टॉप OTT platforms' => 'Top OTT platforms',
+    'असली title-गिनती और इस हफ़्ते की हलचल — रोज़ अपडेट।'
+        => 'Real title counts and this week\'s movement — updated daily.',
+    'सभी %d platforms →' => 'All %d platforms →',
+    'देखें →'           => 'View →',
+    'एक नज़र में OTT बाज़ार' => 'The OTT market at a glance',
+    'पूरी तरह हमारे अपने ट्रैक किए डेटा से — यह संख्या कहीं और नहीं मिलेगी।'
+        => 'Built entirely from availability we track ourselves — numbers you won\'t find elsewhere.',
+    'इस महीने सबसे ज़्यादा जुड़ीं' => 'Most added this month',
+    'ट्रेंडिंग भाषाएँ'   => 'Trending languages',
+    'सब्सक्राइब'        => 'Subscribe',
+    'खोजें और देखें'    => 'Explore',
+    'कंपनी'            => 'Company',
+    'हमारे बारे में'     => 'About',
+    'निजता'            => 'Privacy',
+    'शर्तें'            => 'Terms',
+    'जुड़ें'            => 'Follow',
+    '"%s" की खोज'      => 'Search: "%s"',
+    'कोई फिल्म या वेब सीरीज़ का नाम लिखिए।' => 'Type a movie or web series name.',
+    '"%s" के लिए कुछ नहीं मिला। नाम की वर्तनी जाँचिए या अंग्रेज़ी में लिखकर देखिए।'
+        => 'Nothing found for "%s". Check the spelling, or try the English name.',
+    '%d नतीजे'         => '%d results',
     '%s का poster' => 'Poster of %s',
     'OTT गुरु — कौन सी फिल्म किस platform पर है, और कब से कब तक थी। उपलब्धता रोज़ जाँची जाती है, फिर भी देखने से पहले app में पुष्टि कर लें।'
         => 'OTT Guru — which platform has each movie, and from when to when it was there. Availability is checked daily; still, confirm in the app before watching.',
