@@ -28,6 +28,7 @@ $GLOBALS['__EN'] = [
         => 'Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV — all in one place. And not just "where": <b>when it arrived, where it has been, when it left</b> — the full history.',
     'फिल्में और सीरीज़'  => 'Movies & shows',
     'अभी उपलब्ध'        => 'Available now',
+    'इतिहास में दर्ज बदलाव' => 'Changes in history',
     'इस हफ़्ते नई आईं'    => 'New this week',
     'Platform चुनिए'    => 'Pick a platform',
     'इस हफ़्ते OTT पर नया आया' => 'New on OTT this week',
