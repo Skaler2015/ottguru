@@ -83,6 +83,7 @@ page_header([
   <div class="stat"><b><?= h(hindi_num((int) $stats['titles'])) ?></b><span><?= h(t('फिल्में और सीरीज़')) ?></span></div>
   <div class="stat"><b><?= h(hindi_num((int) $stats['platforms'])) ?></b><span>OTT platforms</span></div>
   <div class="stat"><b><?= h(hindi_num((int) $stats['abhi_uplabdh'])) ?></b><span><?= h(t('अभी उपलब्ध')) ?></span></div>
+  <div class="stat"><b><?= h(hindi_num((int) ($stats['itihas'] ?? 0))) ?></b><span><?= h(t('इतिहास में दर्ज बदलाव')) ?></span></div>
   <div class="stat"><b><?= h(hindi_num((int) $stats['is_hafte_naya'])) ?></b><span><?= h(t('इस हफ़्ते नई आईं')) ?></span></div>
 </div>
 <?php endif; ?>
