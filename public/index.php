@@ -49,6 +49,12 @@ if (count($seg) === 1 && $seg[0] === 'search') {
     exit;
 }
 
+// admin dashboard — /admin?k=<run_token>  (token से सुरक्षित, noindex)
+if (count($seg) === 1 && $seg[0] === 'admin') {
+    require OTT_ROOT . '/site/pages/admin.php';
+    exit;
+}
+
 if (count($seg) === 2 && ($seg[0] === 'movie' || $seg[0] === 'series') && $slug_ok($seg[1])) {
     $want_type = $seg[0] === 'series' ? 'tv' : 'movie';
     $want_slug = $seg[1];
