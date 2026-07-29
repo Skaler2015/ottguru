@@ -64,6 +64,25 @@ function tmdb_discover(string $mediaType, int $providerTmdbId, int $page): array
     ]);
 }
 
+/**
+ * भारतीय भाषा से खोज — India में उपलब्ध वो titles जिनकी मूल भाषा दी गई है।
+ * provider-दर-provider इंतज़ार किए बिना हिंदी/regional कंटेंट सीधे लाता है।
+ * watch_region + monetization_types मिलकर "किसी भी Indian OTT पर उपलब्ध" पक्का करते हैं।
+ */
+function tmdb_discover_lang(string $mediaType, string $lang, int $page): array
+{
+    global $CFG;
+    return tmdb_get('/discover/' . $mediaType, [
+        'watch_region'                  => $CFG['country'],
+        'with_original_language'        => $lang,
+        'with_watch_monetization_types' => 'flatrate|free|ads',
+        'sort_by'                       => 'popularity.desc',
+        'include_adult'                 => 'false',
+        'page'                          => $page,
+        'language'                      => $CFG['language'],
+    ]);
+}
+
 /** providers की मास्टर सूची — install.php इससे providers टेबल भरता है */
 function tmdb_provider_list(string $mediaType): array
 {

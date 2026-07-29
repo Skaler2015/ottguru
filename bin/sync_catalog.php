@@ -28,6 +28,9 @@ $pages = (int) $CFG['batch']['catalog_pages_per_run'];
 
 $MT = ['movie', 'tv'];
 
+// भारत-पहले: इन भाषाओं का कंटेंट सीधे भाषा से खोजा जाता है (provider इंतज़ार बिना)
+$LANGS = ['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'pa', 'gu'];
+
 $provIds = array_map('intval', array_column(all(
     $PDO,
     'SELECT tmdb_provider_id FROM providers
@@ -41,10 +44,21 @@ if ($provIds === []) {
     fail('providers टेबल ख़ाली है। पहले bin/install.php चलाइए।');
 }
 
-$cur = state_get($PDO, 'catalog_cursor', ['mt' => 0, 'pi' => 0, 'page' => 1]);
-$mtI  = (int) ($cur['mt'] ?? 0);
-$pI   = (int) ($cur['pi'] ?? 0);
-$page = max(1, (int) ($cur['page'] ?? 1));
+// कर्सर में दो अलग उप-कर्सर: 'lang' (भारतीय भाषा) और 'prov' (provider sweep)।
+// phase तय करता है अभी कौन चल रहा है। पुराना सपाट कर्सर अपने-आप 'prov' में मिल जाता है
+// (Netflix की प्रगति नहीं टूटती), और नया 'lang' phase शून्य से शुरू होकर पहले चलता है।
+$cur   = state_get($PDO, 'catalog_cursor', []);
+$phase = ($cur['phase'] ?? 'lang') === 'prov' ? 'prov' : 'lang';
+$langC = is_array($cur['lang'] ?? null) ? $cur['lang'] : ['mt' => 0, 'li' => 0, 'page' => 1];
+$provC = is_array($cur['prov'] ?? null) ? $cur['prov']
+       : ['mt' => (int) ($cur['mt'] ?? 0), 'pi' => (int) ($cur['pi'] ?? 0), 'page' => (int) ($cur['page'] ?? 1)];
+// सीमा के अंदर रखिए (list बदल जाए तो भी सुरक्षित)
+$langC['mt'] = (int) $langC['mt'] % count($MT);
+$langC['li'] = (int) $langC['li'] % count($LANGS);
+$langC['page'] = max(1, (int) $langC['page']);
+$provC['mt'] = (int) $provC['mt'] % count($MT);
+$provC['pi'] = count($provIds) > 0 ? (int) $provC['pi'] % count($provIds) : 0;
+$provC['page'] = max(1, (int) $provC['page']);
 
 $seen = 0;
 $new  = 0;
@@ -84,15 +98,24 @@ for ($n = 0; $n < $pages; $n++) {
         break;
     }
 
-    $mt  = $MT[$mtI];
-    $pid = $provIds[$pI];
-
-    $r = tmdb_discover($mt, $pid, $page);
+    if ($phase === 'lang') {
+        $mt   = $MT[$langC['mt']];
+        $lang = $LANGS[$langC['li']];
+        $page = $langC['page'];
+        $r    = tmdb_discover_lang($mt, $lang, $page);
+        $srcLabel = "भाषा $lang";
+    } else {
+        $mt   = $MT[$provC['mt']];
+        $pid  = $provIds[$provC['pi']];
+        $page = $provC['page'];
+        $r    = tmdb_discover($mt, $pid, $page);
+        $srcLabel = "provider #$pid";
+    }
 
     if (!$r['ok']) {
         // कर्सर आगे नहीं बढ़ाते — अगली दौड़ यहीं से दोबारा कोशिश करेगी
         $status = 'failed';
-        $note = "discover विफल ($mt, provider #$pid, पेज $page): " . ($r['error'] ?? '?');
+        $note = "discover विफल ($mt, $srcLabel, पेज $page): " . ($r['error'] ?? '?');
         logline($note);
         break;
     }
@@ -165,33 +188,53 @@ for ($n = 0; $n < $pages; $n++) {
     }
 
     logline(sprintf(
-        '%s · provider #%d · पेज %d/%d · %d नतीजे (नए %d)',
+        '%s · %s · पेज %d/%d · %d नतीजे (नए %d)',
         $mt,
-        $pid,
+        $srcLabel,
         $page,
         $total,
         count($results),
         $new
     ));
 
-    /* ---------------- कर्सर आगे ---------------- */
-    $page++;
-    if ($page > max(1, $total)) {
-        $page = 1;
-        $pI++;
-        if ($pI >= count($provIds)) {
-            $pI = 0;
-            $mtI++;
-            if ($mtI >= count($MT)) {
-                $mtI = 0;
-                logline('पूरा चक्र ख़त्म — दोबारा शुरू से (नए titles पकड़ने के लिए)');
+    /* ---------------- कर्सर आगे ----------------
+       lang phase पहले पूरा होता है (हिंदी/regional सबसे पहले), फिर prov sweep,
+       फिर वापस lang (नया कंटेंट ताज़ा रखने के लिए)। दोनों की प्रगति अलग सहेजी जाती है। */
+    if ($phase === 'lang') {
+        $langC['page']++;
+        if ($langC['page'] > max(1, $total)) {
+            $langC['page'] = 1;
+            $langC['li']++;
+            if ($langC['li'] >= count($LANGS)) {
+                $langC['li'] = 0;
+                $langC['mt']++;
+                if ($langC['mt'] >= count($MT)) {
+                    $langC['mt'] = 0;
+                    $phase = 'prov';        // भारतीय भाषाएँ पूरी → अब provider sweep
+                    logline('भारतीय-भाषा चक्र पूरा → provider sweep शुरू');
+                }
+            }
+        }
+    } else {
+        $provC['page']++;
+        if ($provC['page'] > max(1, $total)) {
+            $provC['page'] = 1;
+            $provC['pi']++;
+            if ($provC['pi'] >= count($provIds)) {
+                $provC['pi'] = 0;
+                $provC['mt']++;
+                if ($provC['mt'] >= count($MT)) {
+                    $provC['mt'] = 0;
+                    $phase = 'lang';        // पूरा चक्र ख़त्म → फिर भारतीय भाषाएँ ताज़ा करो
+                    logline('provider sweep पूरा → भारतीय-भाषा चक्र दोबारा');
+                }
             }
         }
     }
-    state_set($PDO, 'catalog_cursor', ['mt' => $mtI, 'pi' => $pI, 'page' => $page]);
+    state_set($PDO, 'catalog_cursor', ['phase' => $phase, 'lang' => $langC, 'prov' => $provC]);
 }
 
-state_set($PDO, 'catalog_cursor', ['mt' => $mtI, 'pi' => $pI, 'page' => $page]);
+state_set($PDO, 'catalog_cursor', ['phase' => $phase, 'lang' => $langC, 'prov' => $provC]);
 
 $totalTitles = (int) scalar($PDO, 'SELECT COUNT(*) FROM titles');
 logline("DB में कुल titles: $totalTitles  ·  इस दौड़ में नए: $new  ·  " . fmt_secs(ms_now() - $t0));
