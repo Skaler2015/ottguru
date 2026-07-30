@@ -115,32 +115,41 @@ $CSRF     = (string) $_SESSION['csrf'];
 $selfPath = strtok((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), '?');
 
 /**
- * कई URLs की एक साथ (parallel) live जाँच — HTTP code + कितने ms + noindex?
- * हर पेज का सिर्फ़ शुरुआती ~9KB खींचता है (head में robots/meta आ जाता है),
- * इसलिए बड़ा sitemap भी पूरा download नहीं होता। curl न हो तो code=0।
+ * URLs की एक साथ (parallel) live जाँच का एक दौर।
+ * $resolveIp दिया हो तो connection उसी IP पर मुड़ता है (Host/SNI वही रहते हैं) —
+ * इससे "सर्वर अपने ही domain को बाहर से नहीं पढ़ पाता" (NAT) वाली दिक़्क़त हल होती है।
+ * हर पेज का सिर्फ़ ~9KB खींचता है (head में robots/meta आ जाता है)।
  */
-function admin_live_check(array $urls): array
+function admin_live_pass(array $urls, ?string $resolveIp): array
 {
-    if (!function_exists('curl_multi_init')) {
-        return array_map(fn () => ['code' => 0, 'ms' => 0, 'noindex' => false], $urls);
-    }
     $mh = curl_multi_init();
     $hs = $buf = [];
     foreach ($urls as $k => $u) {
         $buf[$k] = '';
-        $ch = curl_init($u);
-        curl_setopt_array($ch, [
+        $ch   = curl_init($u);
+        $opts = [
             CURLOPT_HEADER         => true,
             CURLOPT_TIMEOUT        => 8,
             CURLOPT_CONNECTTIMEOUT => 4,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_SSL_VERIFYPEER => false,   // अपने ही सर्वर की loopback जाँच — cert मायने नहीं रखता
+            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_USERAGENT      => 'OTTGuru-health/1.0',
             CURLOPT_WRITEFUNCTION  => function ($c, $data) use (&$buf, $k) {
                 $buf[$k] .= $data;
                 return strlen($buf[$k]) > 9000 ? 0 : strlen($data);   // 0 = बस, इतना काफ़ी
             },
-        ]);
+        ];
+        if ($resolveIp !== null) {
+            $pu   = parse_url($u);
+            $host = (string) ($pu['host'] ?? '');
+            $port = (int) ($pu['port'] ?? (($pu['scheme'] ?? 'https') === 'https' ? 443 : 80));
+            if ($host !== '') {
+                $opts[CURLOPT_RESOLVE] = ["$host:$port:$resolveIp"];
+            }
+        }
+        curl_setopt_array($ch, $opts);
         curl_multi_add_handle($mh, $ch);
         $hs[$k] = $ch;
     }
@@ -162,6 +171,27 @@ function admin_live_check(array $urls): array
     }
     curl_multi_close($mh);
     return $out;
+}
+
+/**
+ * पहले सीधे जाँचो; जो पेज न खुलें (code 0) उन्हें loopback (127.0.0.1) से दोबारा —
+ * यही Hostinger पर "self-check fail" (सब HTTP 0) की असली मार का इलाज है।
+ */
+function admin_live_check(array $urls): array
+{
+    if (!function_exists('curl_multi_init')) {
+        return array_map(fn () => ['code' => 0, 'ms' => 0, 'noindex' => false], $urls);
+    }
+    $res   = admin_live_pass($urls, null);
+    $retry = array_filter($urls, fn ($u, $k) => (int) ($res[$k]['code'] ?? 0) === 0, ARRAY_FILTER_USE_BOTH);
+    if ($retry !== []) {
+        foreach (admin_live_pass($retry, '127.0.0.1') as $k => $v) {
+            if ((int) $v['code'] !== 0) {
+                $res[$k] = $v;
+            }
+        }
+    }
+    return $res;
 }
 
 // ---- POST क्रियाएँ (PRG: लिखो → redirect → दिखाओ) ----
