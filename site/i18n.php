@@ -84,6 +84,7 @@ $GLOBALS['__EN'] = [
         => 'See the history below for where it used to be.',
     '%s से यहाँ है'     => 'Here since %s',
     'देखें ↗'           => 'Watch ↗',
+    'अभी देखें'         => 'Watch now',
     'किराये / ख़रीद पर'  => 'Rent or buy',
     'कहानी'            => 'Story',
     'उपलब्धता का इतिहास' => 'Availability history',

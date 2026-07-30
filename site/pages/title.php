@@ -224,11 +224,11 @@ page_header([
             <div class="o-name"><a href="/platform/<?= h(rawurlencode($o['slug'])) ?>"><?= h($o['name']) ?></a></div>
             <div class="o-type"><?= h(offer_label($o['offer_type'])) ?></div>
           </div>
-          <div class="o-since"><?= h(tf('%s से यहाँ है', hindi_month($o['first_seen']))) ?>
-            <?php if (nz($o['watch_link'] ?? null) !== null): ?>
-              <br><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank"><?= h(t('देखें ↗')) ?></a>
-            <?php endif; ?>
-          </div>
+          <div class="o-since"><?= h(tf('%s से यहाँ है', hindi_month($o['first_seen']))) ?></div>
+          <?php $wl = watch_url($o, $title); ?>
+          <?php if ($wl !== null): ?>
+            <a class="watchbtn" href="<?= h($wl) ?>" rel="nofollow noopener" target="_blank"><?= h(t('अभी देखें')) ?> <span aria-hidden="true">↗</span></a>
+          <?php endif; ?>
         </div>
         <?php endforeach; ?>
       </div>
@@ -244,8 +244,9 @@ page_header([
             <div class="o-name"><a href="/platform/<?= h(rawurlencode($o['slug'])) ?>"><?= h($o['name']) ?></a></div>
             <div class="o-type"><?= h(offer_label($o['offer_type'])) ?></div>
           </div>
-          <?php if (nz($o['watch_link'] ?? null) !== null): ?>
-            <div class="o-since"><a class="o-link" href="<?= h($o['watch_link']) ?>" rel="nofollow noopener" target="_blank"><?= h(t('देखें ↗')) ?></a></div>
+          <?php $wl = watch_url($o, $title); ?>
+          <?php if ($wl !== null): ?>
+            <a class="watchbtn" href="<?= h($wl) ?>" rel="nofollow noopener" target="_blank"><?= h(t('अभी देखें')) ?> <span aria-hidden="true">↗</span></a>
           <?php endif; ?>
         </div>
         <?php endforeach; ?>

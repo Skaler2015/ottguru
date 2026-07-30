@@ -209,6 +209,12 @@ section, .sec{margin-top:44px}
 .offer .o-type{color:var(--ink2);font-size:13.5px}
 .offer .o-since{margin-left:auto;color:var(--ink2);font-size:13px;text-align:right;font-family:var(--mono)}
 .offer .o-link{white-space:nowrap;color:var(--blue);font-weight:600}
+/* "अभी देखें" — सीधे उस OTT पर वही मूवी खोलता है */
+.watchbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;
+  background:var(--grad);color:#fff;font-weight:600;font-size:13.5px;font-family:var(--body);
+  padding:9px 16px;border-radius:11px;transition:.16s;box-shadow:0 4px 14px rgba(79,140,255,.25)}
+.watchbtn:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 6px 18px rgba(79,140,255,.35)}
+.watchbtn span{font-size:12px;opacity:.9}
 .offer-none{background:var(--card);border:1px dashed var(--line2);border-radius:14px;padding:15px 17px;color:var(--ink2)}
 
 /* history timeline (title page — USP) */
@@ -347,6 +353,7 @@ section, .sec{margin-top:44px}
   .t-head{flex-direction:column}
   .t-poster img{width:160px}
   .offer .o-since{display:none}
+  .offer .watchbtn{margin-left:auto}
 }
 
 /* ---------------------------------------------------------------- admin dashboard */
