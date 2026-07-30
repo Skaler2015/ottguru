@@ -199,6 +199,37 @@ section, .sec{margin-top:44px}
 .t-sub b{color:var(--ink)}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .badge{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 13px;font-size:13px;color:var(--ink2)}
+/* certification pill + genre chips */
+.cert{display:inline-block;border:1px solid var(--line2);border-radius:6px;padding:0 7px;
+  font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);vertical-align:middle}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 12px}
+.chip{background:rgba(79,140,255,.12);border:1px solid rgba(79,140,255,.28);color:#9fc0ff;
+  border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:600}
+.tagline{color:var(--ink2);font-style:italic;margin:0 0 8px}
+
+/* trailer — क्लिक पर ही YouTube लोड (lite embed) */
+.trailer{position:relative;aspect-ratio:16/9;max-width:720px;border-radius:16px;overflow:hidden;
+  cursor:pointer;margin-top:12px;background:var(--card);border:1px solid var(--line)}
+.trailer img{width:100%;height:100%;object-fit:cover;opacity:.82;transition:.2s}
+.trailer:hover img{opacity:1;transform:scale(1.02)}
+.trailer .play{position:absolute;inset:0;margin:auto;width:66px;height:66px;border-radius:50%;
+  background:var(--grad);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.trailer .play::after{content:"";position:absolute;top:50%;left:53%;transform:translate(-50%,-50%);
+  border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent #fff}
+.trailer.on{aspect-ratio:16/9;cursor:default}
+.trailer.on iframe{width:100%;height:100%;border:0;display:block}
+
+/* cast — horizontal rail */
+.castrow{display:flex;gap:14px;overflow-x:auto;padding:4px 22px 12px;margin:12px -22px 0;
+  scrollbar-width:none}
+.castrow::-webkit-scrollbar{display:none}
+.castcard{flex:0 0 104px;text-align:center}
+.castcard .ph{width:104px;height:104px;border-radius:50%;overflow:hidden;background:var(--card);
+  border:1px solid var(--line);display:grid;place-items:center;margin:0 auto}
+.castcard .ph img{width:100%;height:100%;object-fit:cover}
+.castcard .ph .noimg{font-family:var(--disp);font-size:30px;color:var(--ink3)}
+.castcard .nm{font-weight:600;font-size:13px;margin-top:9px;line-height:1.3}
+.castcard .rl{color:var(--ink3);font-size:11.5px;margin-top:2px;line-height:1.3}
 .rating{color:var(--warn);font-weight:700;font-family:var(--mono)}
 .offers{display:flex;flex-direction:column;gap:10px;margin-top:8px}
 .offer{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);

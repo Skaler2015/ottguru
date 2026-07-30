@@ -87,6 +87,11 @@ $GLOBALS['__EN'] = [
     'अभी देखें'         => 'Watch now',
     'किराये / ख़रीद पर'  => 'Rent or buy',
     'कहानी'            => 'Story',
+    'ट्रेलर'            => 'Trailer',
+    'कलाकार'           => 'Cast',
+    '%s का ट्रेलर चलाएँ' => 'Play %s trailer',
+    '%s ट्रेलर'         => '%s trailer',
+    'भारत सेंसर रेटिंग'  => 'India censor rating',
     'उपलब्धता का इतिहास' => 'Availability history',
     'यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।'
         => 'This data lives only on OTT Guru — we check every day what arrived on which platform and when it left.',

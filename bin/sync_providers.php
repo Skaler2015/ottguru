@@ -27,6 +27,17 @@ if ($lock === false) {
 
 run_reap_stale($PDO);
 $runId   = run_start($PDO, 'providers');
+
+// नई मेटाडेटा tables (genre/cast/trailer…) बनी हैं या नहीं?
+// अगर नहीं (सर्वर पर अभी migrate नहीं चला) तो मेटाडेटा लिखना छोड़ दें — वरना
+// एक भी missing-table error पूरे transaction को rollback करके availability डेटा
+// तक गँवा देगा। यानी: बहुमूल्य डेटा हमेशा सुरक्षित, मेटाडेटा बाद में जुड़ जाएगा।
+$hasMeta = (int) scalar($PDO, "SELECT COUNT(*) FROM information_schema.tables
+    WHERE table_schema = DATABASE() AND table_name = 'title_genres'") > 0;
+if (!$hasMeta) {
+    logline('!! मेटाडेटा tables नहीं मिलीं — cast/genre/trailer इस दौड़ में छोड़े गए। '
+        . 'एक बार bin/migrate.php चलाइए, फिर अपने-आप भरने लगेंगे।');
+}
 $t0      = ms_now();
 $maxS    = (int) $CFG['batch']['max_seconds'];
 $limit   = (int) $CFG['batch']['provider_titles_per_run'];
@@ -76,6 +87,8 @@ function resolve_provider(array $p, array $byTmdb, array $byNorm, array &$unknow
     }
     return null;
 }
+// TMDB bundle से genre/cast/trailer/certification निकालने वाला tmdb_extract_extra()
+// अब lib/tmdb.php में है (ताकि अलग से टेस्ट हो सके)।
 
 /* ------------------------------------------------------------------
    2. कौन से titles जाँचने हैं — tier के हिसाब से
@@ -180,6 +193,9 @@ foreach ($due as $t) {
         'langs'    => array_values(array_unique($langs)),
         'origlang' => nz((string) ($d['original_language'] ?? '')),
     ];
+
+    // अतिरिक्त मेटाडेटा (genre, cast, trailer, certification) — नई tables में
+    $pending[$tid]['extra'] = tmdb_extract_extra($d, (string) $t['media_type']);
 
     /* ---- providers ---- */
     $block = $d['watch/providers']['results'][$country] ?? null;
@@ -306,6 +322,45 @@ $insLang = $PDO->prepare(
     'INSERT IGNORE INTO title_languages (title_id, lang_code, kind) VALUES (?, ?, ?)'
 );
 
+/* ---- अतिरिक्त मेटाडेटा के लिए prepared statements ----
+   PDO real prepares (EMULATE=false) करता है, इसलिए missing table पर prepare()
+   ही throw कर देगा — इसीलिए ये सिर्फ़ tables मौजूद होने पर बनते हैं। */
+$insGenre = $delTG = $insTG = $insPerson = $delTC = $insTC = $delTV = $insTV = $upMeta = null;
+if ($hasMeta) {
+    $insGenre = $PDO->prepare(
+        'INSERT INTO genres (id, name_en, slug) VALUES (:id, :n, :s)
+         ON DUPLICATE KEY UPDATE name_en = VALUES(name_en)'
+    );
+    $delTG = $PDO->prepare('DELETE FROM title_genres WHERE title_id = ?');
+    $insTG = $PDO->prepare('INSERT IGNORE INTO title_genres (title_id, genre_id) VALUES (?, ?)');
+
+    $insPerson = $PDO->prepare(
+        'INSERT INTO people (id, name, profile_path) VALUES (:id, :n, :p)
+         ON DUPLICATE KEY UPDATE name = VALUES(name),
+                                 profile_path = COALESCE(VALUES(profile_path), profile_path)'
+    );
+    $delTC = $PDO->prepare('DELETE FROM title_credits WHERE title_id = ?');
+    $insTC = $PDO->prepare(
+        'INSERT INTO title_credits (title_id, person_id, credit_kind, role, ord)
+         VALUES (:t, :p, :k, :r, :o)'
+    );
+
+    $delTV = $PDO->prepare('DELETE FROM title_videos WHERE title_id = ?');
+    $insTV = $PDO->prepare(
+        'INSERT IGNORE INTO title_videos (title_id, yt_key, name, kind, ord)
+         VALUES (:t, :k, :n, :kind, :o)'
+    );
+
+    $upMeta = $PDO->prepare(
+        'INSERT INTO title_meta (title_id, certification, tagline, digital_date)
+         VALUES (:t, :c, :tag, :d)
+         ON DUPLICATE KEY UPDATE
+            certification = COALESCE(VALUES(certification), certification),
+            tagline       = COALESCE(VALUES(tagline), tagline),
+            digital_date  = COALESCE(VALUES(digital_date), digital_date)'
+    );
+}
+
 $PDO->beginTransaction();
 try {
     foreach ($pending as $tid => $p) {
@@ -360,6 +415,42 @@ try {
         }
         if ($de['origlang'] !== null) {
             $insLang->execute([$tid, $de['origlang'], 'original']);
+        }
+
+        // (च) TMDB मेटाडेटा — genre, cast/crew, trailer, certification
+        //     हर बार title के लिए ताज़ा (delete+reinsert), ताकि TMDB से मेल खाए
+        //     $hasMeta झूठा हो तो पूरा ब्लॉक छूटता है (availability डेटा सुरक्षित)
+        $ex = $p['extra'] ?? null;
+        if ($hasMeta && $ex !== null) {
+            $delTG->execute([$tid]);
+            foreach ($ex['genres'] as $gid => $gname) {
+                $insGenre->execute([':id' => (int) $gid, ':n' => $gname, ':s' => slugify($gname)]);
+                $insTG->execute([$tid, (int) $gid]);
+            }
+
+            $delTC->execute([$tid]);
+            foreach (array_merge(
+                array_map(fn ($c) => $c + ['kind' => 'cast'], $ex['cast']),
+                array_map(fn ($c) => $c + ['kind' => 'crew'], $ex['crew'])
+            ) as $c) {
+                $insPerson->execute([':id' => $c['pid'], ':n' => $c['name'], ':p' => $c['profile']]);
+                $insTC->execute([
+                    ':t' => $tid, ':p' => $c['pid'], ':k' => $c['kind'],
+                    ':r' => $c['role'], ':o' => $c['ord'],
+                ]);
+            }
+
+            $delTV->execute([$tid]);
+            foreach ($ex['videos'] as $v) {
+                $insTV->execute([
+                    ':t' => $tid, ':k' => $v['key'], ':n' => $v['name'],
+                    ':kind' => $v['kind'], ':o' => $v['ord'],
+                ]);
+            }
+
+            $upMeta->execute([
+                ':t' => $tid, ':c' => $ex['cert'], ':tag' => $ex['tagline'], ':d' => $ex['digital'],
+            ]);
         }
     }
 

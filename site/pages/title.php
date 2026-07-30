@@ -64,6 +64,37 @@ $original = array_column(array_filter($langs, fn ($l) => $l['kind'] === 'origina
 $langs    = array_values(array_filter($langs,
     fn ($l) => $l['kind'] === 'original' || !in_array($l['lang_code'], $original, true)));
 
+// ---- अतिरिक्त TMDB मेटाडेटा (genre, cast/crew, trailer, certification) --------
+// नई tables से; अगर सर्वर पर अभी migrate नहीं चला (tables नहीं बनीं) तो पन्ना
+// बिना इनके भी पूरा चलता है — इसलिए try/catch में। sync भरने के बाद अपने-आप दिखेंगे।
+$tid_i  = (int) $title['id'];
+$genres = $cast = $crew = $videos = [];
+$meta   = null;
+try {
+    $genres = all($PDO, "SELECT g.name_en, g.slug FROM title_genres tg
+                          JOIN genres g ON g.id = tg.genre_id
+                         WHERE tg.title_id = ? ORDER BY g.name_en", [$tid_i]);
+    $cast   = all($PDO, "SELECT p.name, p.profile_path, tc.role FROM title_credits tc
+                          JOIN people p ON p.id = tc.person_id
+                         WHERE tc.title_id = ? AND tc.credit_kind = 'cast'
+                         ORDER BY tc.ord", [$tid_i]);
+    $crew   = all($PDO, "SELECT p.name, tc.role FROM title_credits tc
+                          JOIN people p ON p.id = tc.person_id
+                         WHERE tc.title_id = ? AND tc.credit_kind = 'crew'
+                         ORDER BY tc.ord", [$tid_i]);
+    $videos = all($PDO, "SELECT yt_key, name, kind FROM title_videos
+                         WHERE title_id = ? ORDER BY ord", [$tid_i]);
+    $meta   = one($PDO, "SELECT certification, tagline, digital_date FROM title_meta
+                         WHERE title_id = ?", [$tid_i]);
+} catch (Throwable $e) {
+    // नई tables अभी मौजूद नहीं — कोई बात नहीं, बाक़ी पन्ना ज्यों का त्यों
+}
+$directors = array_values(array_filter($crew, fn ($c) => $c['role'] === 'Director'));
+$writers   = array_values(array_filter($crew,
+    fn ($c) => in_array($c['role'], ['Writer', 'Screenplay', 'Story', 'Creator'], true)));
+$trailer   = $videos[0] ?? null;
+$cert      = nz((string) ($meta['certification'] ?? ''));
+
 // ---- meta / schema.org -------------------------------------------------------
 $is_tv    = $title['media_type'] === 'tv';
 $year     = nz((string) ($title['release_year'] ?? '')) ;
@@ -102,6 +133,30 @@ if ((float) $title['vote_average'] > 0 && (int) $title['vote_count'] >= 10) {
         '@type' => 'AggregateRating', 'ratingValue' => (float) $title['vote_average'],
         'bestRating' => 10, 'ratingCount' => (int) $title['vote_count'],
     ];
+}
+// नया मेटाडेटा — schema को असली डेटा से और मज़बूत करता है
+if ($genres !== []) {
+    $node['genre'] = array_map(fn ($g) => $g['name_en'], $genres);
+}
+if ($cast !== []) {
+    $node['actor'] = array_map(fn ($c) => ['@type' => 'Person', 'name' => $c['name']],
+        array_slice($cast, 0, 10));
+}
+if ($directors !== []) {
+    $node['director'] = array_map(fn ($c) => ['@type' => 'Person', 'name' => $c['name']], $directors);
+}
+if ($cert !== null) {
+    $node['contentRating'] = $cert;
+}
+if ($trailer !== null) {
+    $thumb = tmdb_img($title['backdrop_path'] ?? null, 'w780') ?? tmdb_img($title['poster_path'], 'w500');
+    $node['trailer'] = array_filter([
+        '@type'        => 'VideoObject',
+        'name'         => nz((string) ($trailer['name'] ?? '')) ?? ($title['title'] . ' Trailer'),
+        'description'  => $title['title'],
+        'embedUrl'     => 'https://www.youtube.com/embed/' . $trailer['yt_key'],
+        'thumbnailUrl' => $thumb,
+    ]);
 }
 
 // ---- FAQ — सिर्फ़ हमारे डेटा से (visible section + FAQPage schema, दोनों एक स्रोत) ----
@@ -179,7 +234,16 @@ page_header([
       <?php if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0): ?>
         · <?= h(tf('%d मिनट', (int) $title['runtime'])) ?>
       <?php endif; ?>
+      <?php if ($cert !== null): ?>
+        · <span class="cert" title="<?= h(t('भारत सेंसर रेटिंग')) ?>"><?= h($cert) ?></span>
+      <?php endif; ?>
     </p>
+
+    <?php if ($genres !== []): ?>
+    <div class="chips">
+      <?php foreach ($genres as $g): ?><span class="chip"><?= h($g['name_en']) ?></span><?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if ((float) $title['vote_average'] > 0):
       $pct = (int) round((float) $title['vote_average'] / 10 * 100);
@@ -258,7 +322,32 @@ page_header([
 
 <?php if (nz($title['overview'] ?? null) !== null): ?>
 <h2><?= h(t('कहानी')) ?></h2>
+<?php if (nz($meta['tagline'] ?? null) !== null): ?><p class="tagline">“<?= h($meta['tagline']) ?>”</p><?php endif; ?>
 <p><?= h($title['overview']) ?></p>
+<?php endif; ?>
+
+<?php if ($trailer !== null):
+  $tthumb = tmdb_img($title['backdrop_path'] ?? null, 'w780') ?? tmdb_img($title['poster_path'], 'w500'); ?>
+<h2><?= h(t('ट्रेलर')) ?></h2>
+<div class="trailer" data-yt="<?= h($trailer['yt_key']) ?>" role="button" tabindex="0"
+     aria-label="<?= h(tf('%s का ट्रेलर चलाएँ', $title['title'])) ?>">
+  <?php if ($tthumb !== null): ?><img src="<?= h($tthumb) ?>" alt="<?= h(tf('%s ट्रेलर', $title['title'])) ?>" loading="lazy"><?php endif; ?>
+  <span class="play" aria-hidden="true"></span>
+</div>
+<?php endif; ?>
+
+<?php if ($cast !== []): ?>
+<h2><?= h(t('कलाकार')) ?></h2>
+<div class="castrow">
+  <?php foreach ($cast as $c): ?>
+  <div class="castcard">
+    <?php $pf = tmdb_img($c['profile_path'] ?? null, 'w185'); ?>
+    <div class="ph"><?php if ($pf !== null): ?><img src="<?= h($pf) ?>" alt="<?= h($c['name']) ?>" loading="lazy"><?php else: ?><span class="noimg"><?= h(mb_substr($c['name'], 0, 1)) ?></span><?php endif; ?></div>
+    <div class="nm"><?= h($c['name']) ?></div>
+    <?php if (nz($c['role'] ?? null) !== null): ?><div class="rl"><?= h($c['role']) ?></div><?php endif; ?>
+  </div>
+  <?php endforeach; ?>
+</div>
 <?php endif; ?>
 
 <?php
@@ -309,11 +398,15 @@ if ($now_names !== []) {
 
 <h2><?= h(t('फिल्म के तथ्य')) ?></h2>
 <div class="facts">
+  <?php if ($directors !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? ($is_tv ? 'क्रिएटर' : 'निर्देशक') : ($is_tv ? 'Creator' : 'Director') ?></div><div class="v" style="font-size:14px"><?= h(implode(', ', array_map(fn ($c) => $c['name'], $directors))) ?></div></div><?php endif; ?>
+  <?php if ($writers !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'लेखक' : 'Writer' ?></div><div class="v" style="font-size:14px"><?= h(implode(', ', array_map(fn ($c) => $c['name'], array_slice($writers, 0, 3)))) ?></div></div><?php endif; ?>
   <?php if ($year !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'रिलीज़ वर्ष' : 'Year' ?></div><div class="v"><?= h($year) ?></div></div><?php endif; ?>
   <div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'किस्म' : 'Type' ?></div><div class="v"><?= h(media_label($title['media_type'])) ?></div></div>
+  <?php if ($cert !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'सेंसर रेटिंग' : 'Certification' ?></div><div class="v"><?= h($cert) ?></div></div><?php endif; ?>
   <?php if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'अवधि' : 'Runtime' ?></div><div class="v"><?= (int) $title['runtime'] ?> <?= OTT_LANG === 'hi' ? 'मिनट' : 'min' ?></div></div><?php endif; ?>
   <?php if ($original !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'मूल भाषा' : 'Original language' ?></div><div class="v"><?= h(lang_label($original[0])) ?></div></div><?php endif; ?>
   <?php if (nz($title['release_date'] ?? null) !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'रिलीज़ तारीख़' : 'Release date' ?></div><div class="v" style="font-size:14px"><?= h(hindi_date($title['release_date'])) ?></div></div><?php endif; ?>
+  <?php if (nz($meta['digital_date'] ?? null) !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'OTT/डिजिटल रिलीज़' : 'OTT/digital release' ?></div><div class="v" style="font-size:14px"><?= h(hindi_date($meta['digital_date'])) ?></div></div><?php endif; ?>
   <?php if (nz($title['status'] ?? null) !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'स्थिति' : 'Status' ?></div><div class="v" style="font-size:14px"><?= h($title['status']) ?></div></div><?php endif; ?>
 </div>
 
@@ -349,6 +442,20 @@ $txt = rawurlencode($title['title'] . ' — OTTGuru');
   } else {
     var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.2});
     els.forEach(function(e){io.observe(e);});
+  }
+  // trailer — क्लिक पर ही YouTube iframe लोड (तब तक कोई third-party नहीं)
+  var tr = document.querySelector('.trailer[data-yt]');
+  if (tr){
+    var load = function(){
+      var k = tr.getAttribute('data-yt');
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + k + '?autoplay=1&rel=0';
+      f.title = 'Trailer'; f.allow = 'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture';
+      f.allowFullscreen = true; f.loading = 'lazy';
+      tr.innerHTML = ''; tr.classList.add('on'); tr.removeAttribute('role'); tr.appendChild(f);
+    };
+    tr.addEventListener('click', load);
+    tr.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); load(); } });
   }
   // share — copy link
   var sc = document.querySelector('.share .s-copy'), box = document.querySelector('.share');
