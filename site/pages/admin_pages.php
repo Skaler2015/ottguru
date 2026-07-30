@@ -101,6 +101,58 @@ $statusOf = function (array $r) use ($L, &$anyUnchecked): array {
     </p>
   </div>
 
+  <!-- ====== IndexNow — तुरंत index के लिए सबमिट ====== -->
+  <div class="panel" style="margin-top:16px">
+    <div class="ph"><h3><?= $L ? 'तुरंत index के लिए सबमिट (IndexNow)' : 'Submit for indexing (IndexNow)' ?></h3>
+      <span class="t">Bing · Yandex · Seznam …</span></div>
+
+    <?php if ($flash === 'inon'): ?><div class="okline">✓ <?= $L ? 'IndexNow चालू हो गया।' : 'IndexNow enabled.' ?></div><?php endif; ?>
+    <?php if ($flash === 'insent'):
+      $c = (int) ($inLast['code'] ?? 0); $good = $c >= 200 && $c < 300; ?>
+      <div class="okline"<?= $good ? '' : ' style="background:rgba(255,197,66,.1);border-color:rgba(255,197,66,.3);color:#ffd985"' ?>>
+        <?= $good ? '✓ ' . ($L ? 'भेज दिया' : 'sent') : '⚠ ' . ($L ? 'भेजा' : 'sent') ?>
+        — <?= (int) ($inLast['n'] ?? 0) ?> URL · HTTP <?= $c ?: '—' ?>
+      </div>
+    <?php endif; ?>
+
+    <?php if ($inKey === ''): ?>
+      <p class="dim" style="font-size:13.5px;margin:0 0 12px;max-width:70ch">
+        <?= $L ? 'एक बार चालू कर दीजिए — फिर एक क्लिक में नए/बदले पेज सीधे search engines को “अभी देख लो” कह देंगे। कोई setup नहीं, key अपने-आप बनकर सुरक्षित रहती है।'
+               : 'Turn it on once — then one click tells search engines to crawl new/changed pages. No setup; the key is generated and stored for you.' ?>
+      </p>
+      <form method="post" action="<?= $e($selfPath) ?>">
+        <input type="hidden" name="csrf" value="<?= $e($CSRF) ?>">
+        <input type="hidden" name="do" value="indexnow_on">
+        <button type="submit" class="watchbtn" style="box-shadow:none"><?= $L ? 'IndexNow चालू करें' : 'Enable IndexNow' ?></button>
+      </form>
+    <?php else:
+      $kf   = $live['IndexNow key फ़ाइल'] ?? ['code' => 0];
+      $kfOk = (int) $kf['code'] >= 200 && (int) $kf['code'] < 300; ?>
+      <table class="atable" style="margin-bottom:14px">
+        <tr><td><?= $L ? 'हालत' : 'status' ?></td><td class="n" style="color:var(--good)"><?= $L ? 'चालू ✓' : 'on ✓' ?></td></tr>
+        <tr><td><?= $L ? 'key फ़ाइल live?' : 'key file live?' ?></td>
+          <td class="n" style="color:<?= $kfOk ? 'var(--good)' : 'var(--warn)' ?>"><?= $kfOk ? 'HTTP ' . (int) $kf['code'] . ' ✓' : ($L ? 'जाँच नहीं' : 'not verified') ?></td></tr>
+        <?php if (is_array($inLast)): ?>
+        <tr><td><?= $L ? 'पिछली सबमिट' : 'last submit' ?></td><td class="n"><?= $e($inLast['at'] ?? '') ?> · <?= (int) ($inLast['n'] ?? 0) ?> URL · HTTP <?= (int) ($inLast['code'] ?? 0) ?: '—' ?></td></tr>
+        <?php endif; ?>
+      </table>
+      <form method="post" action="<?= $e($selfPath) ?>">
+        <input type="hidden" name="csrf" value="<?= $e($CSRF) ?>">
+        <input type="hidden" name="do" value="indexnow_recent">
+        <button type="submit" class="watchbtn" style="box-shadow:none"><?= $L ? ('आज के ' . (int) $todayNew . ' नए/बदले पेज सबमिट करें') : ('Submit ' . (int) $todayNew . ' recent pages') ?></button>
+      </form>
+      <p class="dim small" style="margin:12px 2px 0">
+        <?= $L ? 'किसी एक फ़िल्म का URL भेजना हो तो उसका inspector खोलिए → “index सबमिट करें”।'
+               : 'For a single title, open its inspector → “Submit to index”.' ?>
+      </p>
+    <?php endif; ?>
+
+    <p class="dim small" style="margin:12px 2px 0">
+      ⚠ <?= $L ? 'IndexNow, Bing/Yandex आदि तक पहुँचता है। Google अभी IndexNow नहीं लेता — Google के लिए नीचे “असली Google index” (sitemap + Search Console) देखिए।'
+              : 'IndexNow reaches Bing/Yandex etc. Google doesn’t support IndexNow yet — for Google use sitemap + Search Console below.' ?>
+    </p>
+  </div>
+
   <!-- ====== sitemap + GSC ====== -->
   <div class="agrid" style="margin-top:16px">
     <div class="panel">

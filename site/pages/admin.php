@@ -194,6 +194,42 @@ function admin_live_check(array $urls): array
     return $res;
 }
 
+/**
+ * IndexNow — URLs को Bing/Yandex आदि को तुरंत "index कर लो" कहना (मुफ़्त, आधिकारिक)।
+ * एक POST में 10,000 तक URL। लौटाता है ['code'=>HTTP, 'n'=>कितने भेजे]।
+ * (Google IndexNow अभी आधिकारिक तौर पर नहीं लेता — उसके लिए GSC/sitemap ही रास्ता।)
+ */
+function indexnow_submit(string $host, string $key, array $urls): array
+{
+    $urls = array_values(array_unique(array_filter(array_map('trim', $urls))));
+    if ($host === '' || $key === '' || $urls === [] || !function_exists('curl_init')) {
+        return ['code' => 0, 'n' => 0];
+    }
+    $payload = json_encode([
+        'host'        => $host,
+        'key'         => $key,
+        'keyLocation' => 'https://' . $host . '/' . $key . '.txt',
+        'urlList'     => array_slice($urls, 0, 10000),
+    ]);
+    $ch = curl_init('https://api.indexnow.org/indexnow');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 12,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ['code' => $code, 'n' => count($urls)];
+}
+
+// साइट का असली host (बिना port) + पूरा base — canonical से मेल खाता
+$siteHost = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'ottguru.in'));
+$siteBase = 'https://' . $siteHost;
+
 // ---- POST क्रियाएँ (PRG: लिखो → redirect → दिखाओ) ----
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
     if (!hash_equals($CSRF, (string) ($_POST['csrf'] ?? ''))) {
@@ -233,6 +269,41 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
         header('Location: ' . $selfPath . '?ok=alias');
         exit;
     }
+
+    // IndexNow चालू — एक random key बनाकर sync_state में सहेजो (config नहीं छूना पड़ता)
+    if ($do === 'indexnow_on') {
+        if ((string) state_get($PDO, 'indexnow_key', '') === '') {
+            state_set($PDO, 'indexnow_key', bin2hex(random_bytes(16)));
+        }
+        header('Location: ' . $selfPath . '?view=pages&ok=inon');
+        exit;
+    }
+    // आज जुड़े/बदले titles के URL IndexNow को भेजो
+    if ($do === 'indexnow_recent') {
+        $key = (string) state_get($PDO, 'indexnow_key', '');
+        $rows = all($PDO, "SELECT DISTINCT t.slug, t.media_type FROM availability_changes c
+                           JOIN titles t ON t.id=c.title_id
+                          WHERE c.changed_on >= (CURDATE() - INTERVAL 2 DAY)
+                          ORDER BY c.id DESC LIMIT 500");
+        $urls = array_map(fn ($t) => $siteBase . title_url($t), $rows);
+        $urls[] = $siteBase . '/';
+        $r = indexnow_submit($siteHost, $key, $urls);
+        state_set($PDO, 'indexnow_last', ['at' => date('Y-m-d H:i'), 'code' => $r['code'], 'n' => $r['n']]);
+        header('Location: ' . $selfPath . '?view=pages&ok=insent');
+        exit;
+    }
+    // किसी एक title का URL भेजो (inspector से)
+    if ($do === 'indexnow_one' && $id > 0) {
+        $key = (string) state_get($PDO, 'indexnow_key', '');
+        $t   = one($PDO, 'SELECT slug, media_type FROM titles WHERE id = ?', [$id]);
+        if ($t !== null && $key !== '') {
+            $r = indexnow_submit($siteHost, $key, [$siteBase . title_url($t)]);
+            state_set($PDO, 'indexnow_last', ['at' => date('Y-m-d H:i'), 'code' => $r['code'], 'n' => $r['n']]);
+        }
+        header('Location: ' . $selfPath . '?view=title&id=' . $id . '&ok=insent');
+        exit;
+    }
+
     header('Location: ' . $selfPath);
     exit;
 }
@@ -260,6 +331,7 @@ if (($_GET['view'] ?? '') === 'title') {
             $iCast   = all($PDO, "SELECT p.name, tc.role, tc.credit_kind FROM title_credits tc JOIN people p ON p.id=tc.person_id WHERE tc.title_id=? ORDER BY tc.credit_kind, tc.ord LIMIT 12", [$tid]);
         } catch (Throwable $ex) { /* मेटाडेटा tables न हों तो कोई बात नहीं */ }
     }
+    $inKey = (string) state_get($PDO, 'indexnow_key', '');   // IndexNow चालू है?
     require OTT_ROOT . '/site/pages/admin_title.php';
     exit;
 }
@@ -316,6 +388,16 @@ if (($_GET['view'] ?? '') === 'pages') {
     $check['/naya'] = $base . '/naya';
     $check['/hata'] = $base . '/hata';
     $check['/search'] = $base . '/search?q=test';
+
+    // IndexNow — key + पिछली सबमिट। key set हो तो उसकी verify-फ़ाइल भी live-check में।
+    $inKey  = (string) state_get($PDO, 'indexnow_key', '');
+    $inLast = state_get($PDO, 'indexnow_last', null);
+    if ($inKey !== '') {
+        $check['IndexNow key फ़ाइल'] = $base . '/' . $inKey . '.txt';
+    }
+    $todayNew = (int) scalar($PDO, "SELECT COUNT(DISTINCT title_id) FROM availability_changes
+        WHERE changed_on >= (CURDATE() - INTERVAL 2 DAY)");
+
     $live = admin_live_check($check);
 
     require OTT_ROOT . '/site/pages/admin_pages.php';
