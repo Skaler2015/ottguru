@@ -197,3 +197,92 @@ CREATE TABLE IF NOT EXISTS sync_state (
   updated_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (k)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+--  TMDB का अतिरिक्त मेटाडेटा (cast, genre, trailer, certification)
+--  ये सब TMDB से आता है, इसलिए disposable है — इन पर CASCADE है, sync हर बार
+--  title के लिए ताज़ा भर देता है। availability_changes की तरह "ख़ज़ाना" नहीं।
+--  मौजूदा टेबलें बिलकुल नहीं छुईं — सिर्फ़ नई जोड़ी गई हैं (backward compatible)।
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 9. genres — TMDB genre मास्टर (base response में id+नाम आते हैं)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS genres (
+  id       SMALLINT UNSIGNED NOT NULL COMMENT 'TMDB genre id — स्थिर रहता है',
+  name_en  VARCHAR(60)  NOT NULL,
+  slug     VARCHAR(60)  NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_genre_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 10. title_genres — कौन सी फिल्म किन genres में
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS title_genres (
+  title_id INT UNSIGNED      NOT NULL,
+  genre_id SMALLINT UNSIGNED NOT NULL,
+  PRIMARY KEY (title_id, genre_id),
+  KEY ix_tg_genre (genre_id),
+  CONSTRAINT fk_tg_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 11. people — cast/crew मास्टर (एक व्यक्ति कई titles में; /person पेज के लिए भी)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS people (
+  id           INT UNSIGNED NOT NULL COMMENT 'TMDB person id',
+  name         VARCHAR(160) NOT NULL,
+  profile_path VARCHAR(160) NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 12. title_credits — cast + crew (sync हर बार title के लिए delete+reinsert)
+--     role = cast में किरदार का नाम, crew में job (Director/Writer आदि)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS title_credits (
+  id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title_id    INT UNSIGNED    NOT NULL,
+  person_id   INT UNSIGNED    NOT NULL,
+  credit_kind ENUM('cast','crew') NOT NULL,
+  role        VARCHAR(200)    NULL,
+  ord         SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY ix_tc_title (title_id, credit_kind, ord),
+  KEY ix_tc_person (person_id),
+  CONSTRAINT fk_tc_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 13. title_videos — trailer/teaser (सिर्फ़ YouTube key; फ़ाइल नहीं)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS title_videos (
+  id       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title_id INT UNSIGNED    NOT NULL,
+  yt_key   VARCHAR(24)     NOT NULL,
+  name     VARCHAR(200)    NULL,
+  kind     VARCHAR(30)     NULL COMMENT 'Trailer / Teaser / Clip',
+  ord      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_video (title_id, yt_key),
+  CONSTRAINT fk_tv_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 14. title_meta — 1:1 अतिरिक्त जानकारी (titles टेबल को छुए बिना)
+--     certification = भारत की सेंसर रेटिंग; digital_date = OTT/digital रिलीज़
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS title_meta (
+  title_id      INT UNSIGNED NOT NULL,
+  certification VARCHAR(16)  NULL,
+  tagline       VARCHAR(300) NULL,
+  digital_date  DATE         NULL,
+  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (title_id),
+  CONSTRAINT fk_tm_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

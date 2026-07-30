@@ -77,6 +77,44 @@ function provider_url(array $p): string
     return '/platform/' . rawurlencode($p['slug']);
 }
 
+/**
+ * "अभी देखें" बटन का असली destination।
+ *   1. सबसे पहले sync से मिला deep link (सीधे उस OTT पर वही मूवी)
+ *   2. न मिले तो उसी OTT पर title के नाम की search — यूज़र दो क्लिक में मूवी तक
+ *   3. वो भी न बने तो अपना platform पन्ना (बटन कभी टूटा हुआ न रहे)
+ * $offer में watch_link + slug/name; $title में मूल नाम search के लिए।
+ */
+function watch_url(array $offer, array $title): ?string
+{
+    $link = trim((string) ($offer['watch_link'] ?? ''));
+    if ($link !== '') {
+        return $link;
+    }
+
+    // हर OTT का search पैटर्न — {q} पर title का encoded नाम बैठता है।
+    static $search = [
+        'netflix'     => 'https://www.netflix.com/search?q={q}',
+        'prime-video' => 'https://www.primevideo.com/search/ref=atv_nb_sug?phrase={q}',
+        'jiohotstar'  => 'https://www.hotstar.com/in/search?q={q}',
+        'zee5'        => 'https://www.zee5.com/search?q={q}',
+        'sonyliv'     => 'https://www.sonyliv.com/search?searchTerm={q}',
+        'mx-player'   => 'https://www.mxplayer.in/search?q={q}',
+        'jiocinema'   => 'https://www.hotstar.com/in/search?q={q}',
+        'youtube'     => 'https://www.youtube.com/results?search_query={q}',
+        'apple-tv'    => 'https://tv.apple.com/search?term={q}',
+        'google-play-movies' => 'https://play.google.com/store/search?c=movies&q={q}',
+    ];
+
+    $slug = (string) ($offer['slug'] ?? '');
+    $name = trim((string) ($title['title'] ?? ''));
+    if ($name !== '' && isset($search[$slug])) {
+        return str_replace('{q}', rawurlencode($name), $search[$slug]);
+    }
+
+    // कोई ठिकाना नहीं — अपना platform पन्ना ही सही
+    return $slug !== '' ? '/platform/' . rawurlencode($slug) : null;
+}
+
 /** भाषा कोड → UI की भाषा में नाम (भारत में आम भाषाएँ; बाक़ी कोड जैसे के तैसे) */
 function lang_label(string $code): string
 {

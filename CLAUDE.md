@@ -98,8 +98,9 @@ lib/
   run.php               run_start/finish, safety_check, lock  ← नियम 3
 bin/
   install.php           एक बार — टेबलें + TMDB से providers + alias
+  migrate.php           सिर्फ़ नई टेबलें बनाता है (idempotent, TMDB को नहीं छूता)
   sync_catalog.php      नए titles खोजना (कर्सर से resumable)
-  sync_providers.php    providers जाँचना + diff  ← नियम 2
+  sync_providers.php    providers जाँचना + diff + cast/genre/trailer  ← नियम 2
   status.php            सेहत का पन्ना
 public/                 वेबसाइट का web root — index.php (router), .htaccess, assets/
 site/                   वेबसाइट का कोड — web.php (bootstrap), helpers, layout,
@@ -145,6 +146,17 @@ site/                   वेबसाइट का कोड — web.php (boot
 - **`title_languages` फिल्म की भाषा है, dub नहीं।** "Netflix पर हिंदी dub है या
   नहीं" अलग सवाल है और वो Streaming Availability से आएगा। **इन दोनों को कभी
   मिलाकर मत दिखाइए** — एक बार गलत जानकारी दिखी तो यूज़र लौटता नहीं।
+
+- **TMDB मेटाडेटा tables (नई):** `genres` + `title_genres`, `people` +
+  `title_credits` (cast/crew), `title_videos` (trailer), `title_meta`
+  (certification/tagline/digital रिलीज़)। ये **disposable** हैं — TMDB से आती हैं,
+  sync हर बार title के लिए ताज़ा भर देता है (delete+reinsert), इन पर CASCADE है।
+  `availability_changes` जैसा "ख़ज़ाना" नहीं — इन्हें खोकर दोबारा भरा जा सकता है।
+  **मौजूदा tables नहीं छुईं** — सिर्फ़ जोड़ी गईं (backward compatible)।
+  ⚠️ **इस फ़ीचर को deploy करने के बाद एक बार `bin/migrate.php?k=<run_token>`
+  चलाना ज़रूरी है** — auto-deploy सिर्फ़ कोड कॉपी करता है, नई tables नहीं बनाता।
+  tables न हों तो sync मेटाडेटा चुपचाप छोड़ देता है (availability डेटा सुरक्षित
+  रहता है) और title पेज उनके बिना भी पूरा चलता है।
 
 ---
 
