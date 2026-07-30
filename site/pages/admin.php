@@ -102,6 +102,111 @@ if (!$authed) {
 $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $nf = fn (int $n) => number_format($n);
 
+// ============================================================================
+//  नियंत्रण (control) — सिर्फ़ owner, session-login के पीछे।
+//  ⚠️ ये writes जान-बूझकर सुरक्षित हैं: सिर्फ़ sync-नियंत्रण fields (tier,
+//  providers_last_success) और provider_aliases छूते हैं — availability या
+//  availability_changes (ख़ज़ाना) को कभी हाथ नहीं लगाते। तीनों नियम बरक़रार।
+// ============================================================================
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+$CSRF     = (string) $_SESSION['csrf'];
+$selfPath = strtok((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), '?');
+
+// ---- POST क्रियाएँ (PRG: लिखो → redirect → दिखाओ) ----
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
+    if (!hash_equals($CSRF, (string) ($_POST['csrf'] ?? ''))) {
+        http_response_code(400);
+        exit('bad token');
+    }
+    $do = (string) $_POST['do'];
+    $id = (int) ($_POST['id'] ?? 0);
+
+    if ($do === 'recheck' && $id > 0) {
+        // दोबारा जाँच के लिए कतार में — अगली providers दौड़ इसे सबसे पहले देखेगी।
+        // कोई availability/इतिहास नहीं छेड़ा (नियम 2 सुरक्षित)।
+        q($PDO, 'UPDATE titles SET providers_last_success = NULL, providers_fail_streak = 0 WHERE id = ?', [$id]);
+        header('Location: ' . $selfPath . '?view=title&id=' . $id . '&ok=recheck');
+        exit;
+    }
+    if ($do === 'tier' && $id > 0) {
+        $t = max(1, min(3, (int) ($_POST['tier'] ?? 3)));
+        q($PDO, 'UPDATE titles SET tier = ? WHERE id = ?', [$t, $id]);
+        header('Location: ' . $selfPath . '?view=title&id=' . $id . '&ok=tier');
+        exit;
+    }
+    if ($do === 'alias') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $pid  = (int) ($_POST['pid'] ?? 0);
+        if ($name !== '' && $pid > 0 && norm_name($name) !== '') {
+            q($PDO, 'INSERT INTO provider_aliases (provider_id, alias_norm, alias_raw, source)
+                     VALUES (?, ?, ?, "manual")
+                     ON DUPLICATE KEY UPDATE provider_id = VALUES(provider_id)',
+                [$pid, norm_name($name), $name]);
+            $unk = state_get($PDO, 'unknown_providers', []);   // पहचानी सूची से हटाएँ
+            if (is_array($unk)) {
+                unset($unk[$name]);
+                state_set($PDO, 'unknown_providers', $unk);
+            }
+        }
+        header('Location: ' . $selfPath . '?ok=alias');
+        exit;
+    }
+    header('Location: ' . $selfPath);
+    exit;
+}
+$flash = (string) ($_GET['ok'] ?? '');
+
+// ============================================================================
+//  Title inspector — /admin?view=title&id=N  (एक फिल्म की पूरी कुंडली + क्रियाएँ)
+// ============================================================================
+if (($_GET['view'] ?? '') === 'title') {
+    $tid = (int) ($_GET['id'] ?? 0);
+    $t   = $tid > 0 ? one($PDO, 'SELECT * FROM titles WHERE id = ?', [$tid]) : null;
+
+    $iOffers = $iSpells = $iEvents = $iLangs = $iGenres = $iCast = [];
+    if ($t !== null) {
+        $iOffers = all($PDO, "SELECT p.name, a.offer_type, a.first_seen, a.is_current
+              FROM availability a JOIN providers p ON p.id=a.provider_id
+             WHERE a.title_id=? ORDER BY a.is_current DESC,
+                   FIELD(a.offer_type,'flatrate','ads','free','rent','buy'), p.display_priority", [$tid]);
+        $iEvents = all($PDO, "SELECT c.changed_on, c.change_type, p.name, c.offer_type
+              FROM availability_changes c JOIN providers p ON p.id=c.provider_id
+             WHERE c.title_id=? ORDER BY c.changed_on DESC, c.id DESC LIMIT 40", [$tid]);
+        $iLangs  = all($PDO, "SELECT lang_code, kind FROM title_languages WHERE title_id=? ORDER BY kind='original' DESC", [$tid]);
+        try {
+            $iGenres = all($PDO, "SELECT g.name_en FROM title_genres tg JOIN genres g ON g.id=tg.genre_id WHERE tg.title_id=?", [$tid]);
+            $iCast   = all($PDO, "SELECT p.name, tc.role, tc.credit_kind FROM title_credits tc JOIN people p ON p.id=tc.person_id WHERE tc.title_id=? ORDER BY tc.credit_kind, tc.ord LIMIT 12", [$tid]);
+        } catch (Throwable $ex) { /* मेटाडेटा tables न हों तो कोई बात नहीं */ }
+    }
+    require OTT_ROOT . '/site/pages/admin_title.php';
+    exit;
+}
+
+// ---- खोज (dashboard पर) — ?q= ----
+$q       = trim((string) ($_GET['q'] ?? ''));
+$results = [];
+if ($q !== '') {
+    $like = '%' . $q . '%';
+    $results = all($PDO, "SELECT id, title, media_type, release_year, slug, tier,
+                                 providers_last_success
+            FROM titles WHERE title LIKE ? OR original_title LIKE ? OR slug LIKE ?
+           ORDER BY popularity DESC LIMIT 25", [$like, $like, $like]);
+}
+
+// ---- thin-page audit — कमज़ोर पेज (SEO जोखिम): न availability, न overview ----
+$thinCount = (int) scalar($PDO, "SELECT COUNT(*) FROM titles t
+     WHERE NOT EXISTS (SELECT 1 FROM availability a WHERE a.title_id=t.id AND a.is_current=1)
+       AND (t.overview IS NULL OR t.overview='')");
+$thin = all($PDO, "SELECT t.id, t.title, t.media_type, t.release_year FROM titles t
+     WHERE NOT EXISTS (SELECT 1 FROM availability a WHERE a.title_id=t.id AND a.is_current=1)
+       AND (t.overview IS NULL OR t.overview='')
+     ORDER BY t.popularity DESC LIMIT 10");
+
+// providers की सूची (alias mapper के dropdown के लिए)
+$provList = all($PDO, 'SELECT id, name FROM providers WHERE is_active=1 ORDER BY display_priority, name');
+
 // ---- overview ----------------------------------------------------------------
 $c = [
     'titles'   => (int) scalar($PDO, 'SELECT COUNT(*) FROM titles'),
@@ -218,6 +323,30 @@ $runcell = function (?array $r) use ($e): string {
 <?php if ($halted !== []): ?>
 <div class="alarm"><b>सुरक्षा ब्रेक लगा था।</b> <?= $e($halted[0]['note'] ?? '') ?><br>
   <span class="dim small">वजह ठीक होने तक कोई बदलाव दर्ज नहीं होगा — इतिहास सुरक्षित है।</span></div>
+<?php endif; ?>
+
+<!-- खोज — किसी title की पूरी कुंडली + क्रियाओं तक जाने का रास्ता -->
+<form class="asearch" method="get" action="<?= $e($selfPath) ?>">
+  <input type="search" name="q" value="<?= $e($q) ?>" placeholder="<?= OTT_LANG === 'hi' ? 'कोई फिल्म/सीरीज़ खोजें… (नाम या slug)' : 'Search a title…' ?>" autocomplete="off" autofocus>
+  <button type="submit"><?= OTT_LANG === 'hi' ? 'खोजें' : 'Search' ?></button>
+</form>
+<?php if ($q !== ''): ?>
+<div class="panel" style="margin-bottom:16px">
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'खोज नतीजे' : 'Results' ?></h3><span class="t"><?= count($results) ?> · “<?= $e($q) ?>”</span></div>
+  <div style="overflow-x:auto"><table class="atable">
+    <tr><th>title</th><th>tier</th><th><?= OTT_LANG === 'hi' ? 'जाँचा' : 'checked' ?></th><th></th></tr>
+    <?php foreach ($results as $r): ?>
+    <tr>
+      <td><a href="<?= $e($selfPath) ?>?view=title&id=<?= (int) $r['id'] ?>"><?= $e($r['title']) ?><?= $r['release_year'] ? ' <span class="dim">(' . $e($r['release_year']) . ')</span>' : '' ?></a>
+        <span class="dim small"><?= $r['media_type'] === 'tv' ? '· सीरीज़' : '· फिल्म' ?></span></td>
+      <td class="n"><?= (int) $r['tier'] ?></td>
+      <td class="n"><?= $r['providers_last_success'] ? $e(substr((string) $r['providers_last_success'], 0, 10)) : '<span style="color:var(--warn)">' . (OTT_LANG === 'hi' ? 'कभी नहीं' : 'never') . '</span>' ?></td>
+      <td class="n"><a href="<?= $e($selfPath) ?>?view=title&id=<?= (int) $r['id'] ?>"><?= OTT_LANG === 'hi' ? 'खोलें →' : 'open →' ?></a></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php if ($results === []): ?><tr><td colspan="4" class="dim"><?= OTT_LANG === 'hi' ? 'कुछ नहीं मिला।' : 'Nothing found.' ?></td></tr><?php endif; ?>
+  </table></div>
+</div>
 <?php endif; ?>
 
 <div class="acards">
@@ -355,14 +484,47 @@ $runcell = function (?array $r) use ($e): string {
   </div>
 </div>
 
+<!-- thin-page audit — SEO जोखिम -->
+<div class="panel" style="margin-top:16px">
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'कमज़ोर (thin) पेज' : 'Thin pages' ?></h3><span class="t"><?= $nf($thinCount) ?> · SEO जोखिम</span></div>
+  <p class="dim small" style="margin:0 0 10px">
+    <?= OTT_LANG === 'hi' ? 'इन पर न कोई OTT है, न कहानी — Google इन्हें deindex कर सकता है। providers दौड़ भरने पर अपने-आप घटेंगे। किसी को खोलकर “अभी दोबारा जाँचें” दबा सकते हैं।'
+       : 'No OTT and no overview — deindex risk. They shrink as the providers run fills them. Open one to “Re-check now”.' ?>
+  </p>
+  <div style="overflow-x:auto"><table class="atable">
+    <tr><th>title</th><th></th></tr>
+    <?php foreach ($thin as $r): ?>
+    <tr><td><a href="<?= $e($selfPath) ?>?view=title&id=<?= (int) $r['id'] ?>"><?= $e($r['title']) ?><?= $r['release_year'] ? ' (' . $e($r['release_year']) . ')' : '' ?></a></td>
+      <td class="n dim small"><?= $r['media_type'] === 'tv' ? 'सीरीज़' : 'फिल्म' ?></td></tr>
+    <?php endforeach; ?>
+    <?php if ($thin === []): ?><tr><td colspan="2" class="dim"><?= OTT_LANG === 'hi' ? 'कोई नहीं — बढ़िया!' : 'None — great!' ?></td></tr><?php endif; ?>
+  </table></div>
+</div>
+
 <?php if (is_array($unknown) && $unknown !== []): ?>
 <div class="panel" style="margin-top:16px">
-  <div class="ph"><h3>अनजाने provider नाम</h3><span class="t">alias जोड़िए</span></div>
-  <table class="atable"><tr><th>नाम</th><th>बार</th></tr>
-  <?php arsort($unknown); foreach (array_slice($unknown, 0, 15, true) as $nm => $cnt): ?>
-    <tr><td><?= $e($nm) ?></td><td class="n"><?= (int) $cnt ?></td></tr>
-  <?php endforeach; ?>
-  </table>
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'अनजाने provider नाम' : 'Unknown provider names' ?></h3><span class="t"><?= OTT_LANG === 'hi' ? 'सही OTT से जोड़िए' : 'map to a provider' ?></span></div>
+  <?php if ($flash === 'alias'): ?><div class="okline">✓ <?= OTT_LANG === 'hi' ? 'जुड़ गया — अगली दौड़ से यह नाम सही जगह गिना जाएगा।' : 'Mapped — counted correctly from the next run.' ?></div><?php endif; ?>
+  <div style="overflow-x:auto"><table class="atable">
+    <tr><th><?= OTT_LANG === 'hi' ? 'नाम' : 'name' ?></th><th><?= OTT_LANG === 'hi' ? 'बार' : 'seen' ?></th><th><?= OTT_LANG === 'hi' ? 'किस OTT से जोड़ें?' : 'map to' ?></th></tr>
+    <?php arsort($unknown); foreach (array_slice($unknown, 0, 15, true) as $nm => $cnt): ?>
+    <tr>
+      <td><?= $e($nm) ?></td><td class="n"><?= (int) $cnt ?></td>
+      <td>
+        <form method="post" action="<?= $e($selfPath) ?>" style="display:flex;gap:8px;align-items:center">
+          <input type="hidden" name="csrf" value="<?= $e($CSRF) ?>">
+          <input type="hidden" name="do" value="alias">
+          <input type="hidden" name="name" value="<?= $e($nm) ?>">
+          <select name="pid" class="asel" required>
+            <option value=""><?= OTT_LANG === 'hi' ? '— चुनिए —' : '— choose —' ?></option>
+            <?php foreach ($provList as $p): ?><option value="<?= (int) $p['id'] ?>"><?= $e($p['name']) ?></option><?php endforeach; ?>
+          </select>
+          <button type="submit" class="abtn"><?= OTT_LANG === 'hi' ? 'जोड़ें' : 'Map' ?></button>
+        </form>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+  </table></div>
 </div>
 <?php endif; ?>
 

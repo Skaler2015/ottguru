@@ -398,6 +398,21 @@ section, .sec{margin-top:44px}
 .abar .alogout{font-family:var(--mono);font-size:12px;color:var(--ink3);border:1px solid var(--line);
   border-radius:8px;padding:5px 11px;transition:.14s}
 .abar .alogout:hover{color:var(--ink);border-color:var(--line2);text-decoration:none}
+/* admin नियंत्रण — खोज, बटन, dropdown */
+.asearch{display:flex;gap:10px;margin-bottom:16px}
+.asearch input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line2);border-radius:12px;
+  padding:12px 15px;color:var(--ink);font-size:15px;font-family:var(--body);outline:0}
+.asearch input:focus{border-color:var(--blue)}
+.asearch button{padding:12px 20px;border:0;border-radius:12px;background:var(--grad);color:#fff;
+  font-weight:600;font-size:14px;cursor:pointer;font-family:var(--body);white-space:nowrap}
+.abtn{padding:8px 14px;border-radius:9px;border:1px solid var(--line2);background:var(--card);color:var(--ink);
+  font-size:13px;font-weight:600;font-family:var(--body);cursor:pointer;transition:.14s;white-space:nowrap}
+.abtn:hover{border-color:var(--blue);color:#fff}
+.abtn:disabled{opacity:.4;cursor:default}
+.asel{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--ink);
+  font-size:13px;font-family:var(--body);outline:0;max-width:200px}
+.okline{background:rgba(0,210,106,.1);border:1px solid rgba(0,210,106,.3);color:#5ff0a6;border-radius:10px;
+  padding:9px 13px;font-size:13.5px;margin-bottom:12px}
 .hpill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;
   padding:4px 12px;border-radius:999px;border:1px solid var(--line)}
 .hpill .d{width:8px;height:8px;border-radius:50%}
