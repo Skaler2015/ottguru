@@ -395,6 +395,9 @@ section, .sec{margin-top:44px}
 .abar .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink3);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
 .abar .when{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink3)}
+.abar .alogout{font-family:var(--mono);font-size:12px;color:var(--ink3);border:1px solid var(--line);
+  border-radius:8px;padding:5px 11px;transition:.14s}
+.abar .alogout:hover{color:var(--ink);border-color:var(--line2);text-decoration:none}
 .hpill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;
   padding:4px 12px;border-radius:999px;border:1px solid var(--line)}
 .hpill .d{width:8px;height:8px;border-radius:50%}

@@ -1,24 +1,103 @@
 <?php
 /**
- * ADMIN dashboard — दो तरीक़ों से खुलता है:
- *   1. गुप्त छोटा path — /<admin_path>   (config.php का admin_path, जैसे /skaler2015)
- *   2. /admin?k=<run_token>              (लंबा token वाला पुराना तरीक़ा — अब भी चलता है)
- * सिर्फ़ पढ़ता है (read-only), noindex। 100% असली डेटा।
+ * ADMIN dashboard — password login के पीछे (read-only, noindex, 100% असली डेटा)।
+ *   • खुलता है  /admin  या गुप्त  /<admin_path>  (config.php का admin_path, जैसे /skaler2015)
+ *   • password  = config.php का admin_pass (न हो तो run_token ही password)
+ *   • login session में याद रहता है; ऊपर "लॉगआउट" से बाहर
+ *   • /admin?k=<run_token> — बिना फ़ॉर्म सीधा (bookmark/backward compat)
  * sync/health पर नज़र रखने के लिए — status.php का premium web रूप।
  */
 declare(strict_types=1);
 
-// ---- auth gate — किसी भी हाल में असफल → सादा 404 (मौजूदगी तक न बताए) ----
-// $ADMIN_AUTHED router ने तब सच किया जब गुप्त admin_path से आया (path खुद चाबी है)।
-$authed = !empty($GLOBALS['ADMIN_AUTHED']);
-if (!$authed) {
-    $tok = (string) ($CFG['run_token'] ?? '');
-    if ($tok === '' || $tok === 'बदल-कर-कुछ-लंबा-लिखिए'
-        || !isset($_GET['k']) || !hash_equals($tok, (string) $_GET['k'])) {
-        not_found();
-    }
+// ---- session शुरू (किसी भी output से पहले) ----
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name('ottg_adm');
+    @session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'path' => '/']);
+    @session_start();
 }
 header('X-Robots-Tag: noindex, nofollow');
+
+// ---- logout ----
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    @session_destroy();
+    header('Location: ' . strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?'));
+    exit;
+}
+
+$authed = !empty($_SESSION['ott_admin']);
+
+// ?k=<run_token> से आया हो तो सीधा भीतर (पुराना bookmark टूटे नहीं)
+if (!$authed) {
+    $rt = (string) ($CFG['run_token'] ?? '');
+    if ($rt !== '' && $rt !== 'बदल-कर-कुछ-लंबा-लिखिए'
+        && isset($_GET['k']) && hash_equals($rt, (string) $_GET['k'])) {
+        $authed = true;
+    }
+}
+
+// password — config का admin_pass; सेट न हो तो run_token ही चलेगा
+$adminPass = (string) ($CFG['admin_pass'] ?? '');
+if ($adminPass === '') {
+    $adminPass = (string) ($CFG['run_token'] ?? '');
+}
+
+// login फ़ॉर्म का POST
+$loginErr = false;
+if (!$authed && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['pass'])) {
+    if ($adminPass !== '' && $adminPass !== 'बदल-कर-कुछ-लंबा-लिखिए'
+        && hash_equals($adminPass, (string) $_POST['pass'])) {
+        session_regenerate_id(true);
+        $_SESSION['ott_admin'] = true;
+        header('Location: ' . strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?'));
+        exit;
+    }
+    $loginErr = true;
+    sleep(1);   // ग़लत कोशिश को सुस्त करना (brute-force रोक)
+}
+
+// login नहीं हुआ → login पन्ना दिखाकर रुक जाओ
+if (!$authed) {
+    http_response_code($loginErr ? 401 : 200);
+    $L = OTT_LANG === 'hi';
+    ?><!doctype html>
+<html lang="<?= OTT_LANG ?>">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>OTTGuru · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  .lg{min-height:100dvh;display:grid;place-items:center;padding:20px}
+  .lgcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:32px 26px;width:100%;max-width:340px}
+  .lgcard h1{font-size:21px;margin:14px 0 4px}
+  .lgcard .sub{color:var(--ink3);font-size:13px;margin:0 0 18px}
+  .lgcard input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);border-radius:11px;padding:12px 14px;color:var(--ink);font-size:15px;font-family:var(--body);outline:0;margin-bottom:12px}
+  .lgcard input:focus{border-color:var(--blue)}
+  .lgcard button{width:100%;padding:12px;border:0;border-radius:11px;background:var(--grad);color:#fff;font-weight:600;font-size:15px;cursor:pointer;font-family:var(--body)}
+  .lgerr{background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.3);color:#ff9db0;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="lg">
+  <form class="lgcard" method="post" action="">
+    <a class="logo" href="/" style="font-size:22px">OTT<span>Guru</span></a>
+    <h1><?= $L ? 'एडमिन लॉगिन' : 'Admin login' ?></h1>
+    <div class="sub"><?= $L ? 'आगे बढ़ने के लिए पासवर्ड डालिए' : 'Enter your password to continue' ?></div>
+    <?php if ($loginErr): ?><div class="lgerr"><?= $L ? 'ग़लत पासवर्ड — फिर कोशिश कीजिए' : 'Wrong password — try again' ?></div><?php endif; ?>
+    <input type="password" name="pass" placeholder="<?= $L ? 'पासवर्ड' : 'Password' ?>" autofocus autocomplete="current-password" required>
+    <button type="submit"><?= $L ? 'लॉगिन' : 'Log in' ?></button>
+  </form>
+</div>
+</body>
+</html>
+<?php
+    exit;
+}
 
 $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $nf = fn (int $n) => number_format($n);
@@ -131,6 +210,7 @@ $runcell = function (?array $r) use ($e): string {
   <span class="tag">Admin</span>
   <span class="hpill <?= $health[0] ?>"><span class="d"></span><?= $e($health[1]) ?></span>
   <span class="when"><?= $e($now) ?></span>
+  <a class="alogout" href="?logout=1"><?= OTT_LANG === 'hi' ? 'लॉगआउट ↩' : 'Log out ↩' ?></a>
 </div></div>
 
 <main class="wrap" style="padding-top:22px">
