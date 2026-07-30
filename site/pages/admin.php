@@ -1,16 +1,22 @@
 <?php
 /**
- * ADMIN dashboard — /admin?k=<run_token>
- * सिर्फ़ पढ़ता है (read-only), token से सुरक्षित, noindex। 100% असली डेटा।
+ * ADMIN dashboard — दो तरीक़ों से खुलता है:
+ *   1. गुप्त छोटा path — /<admin_path>   (config.php का admin_path, जैसे /skaler2015)
+ *   2. /admin?k=<run_token>              (लंबा token वाला पुराना तरीक़ा — अब भी चलता है)
+ * सिर्फ़ पढ़ता है (read-only), noindex। 100% असली डेटा।
  * sync/health पर नज़र रखने के लिए — status.php का premium web रूप।
  */
 declare(strict_types=1);
 
-// ---- token gate (run_token से) — गलत/गुम token पर सादा 404 (मौजूदगी न बताए) ----
-$tok = (string) ($CFG['run_token'] ?? '');
-if ($tok === '' || $tok === 'बदल-कर-कुछ-लंबा-लिखिए'
-    || !isset($_GET['k']) || !hash_equals($tok, (string) $_GET['k'])) {
-    not_found();
+// ---- auth gate — किसी भी हाल में असफल → सादा 404 (मौजूदगी तक न बताए) ----
+// $ADMIN_AUTHED router ने तब सच किया जब गुप्त admin_path से आया (path खुद चाबी है)।
+$authed = !empty($GLOBALS['ADMIN_AUTHED']);
+if (!$authed) {
+    $tok = (string) ($CFG['run_token'] ?? '');
+    if ($tok === '' || $tok === 'बदल-कर-कुछ-लंबा-लिखिए'
+        || !isset($_GET['k']) || !hash_equals($tok, (string) $_GET['k'])) {
+        not_found();
+    }
 }
 header('X-Robots-Tag: noindex, nofollow');
 
