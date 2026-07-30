@@ -286,3 +286,19 @@ CREATE TABLE IF NOT EXISTS title_meta (
   CONSTRAINT fk_tm_title FOREIGN KEY (title_id)
     REFERENCES titles (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 15. provider_audio — "इस OTT पर यह title किन ऑडियो/dub भाषाओं में है"
+--     Streaming Availability API से आता है। ⚠️ यह TMDB की title-भाषा से अलग है
+--     (CLAUDE.md §5) — दोनों को कभी मिलाकर मत दिखाइए।
+--     disposable: SA sync हर बार title के लिए ताज़ा भरता है (delete+reinsert), CASCADE।
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS provider_audio (
+  title_id    INT UNSIGNED      NOT NULL,
+  provider_id SMALLINT UNSIGNED NOT NULL,
+  lang_code   VARCHAR(8)        NOT NULL,
+  PRIMARY KEY (title_id, provider_id, lang_code),
+  KEY ix_pa_prov (provider_id, lang_code),
+  CONSTRAINT fk_pa_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -39,7 +39,7 @@
 |---|---|
 | 0 — डेटा सत्यापन | ✅ पूरा। TMDB 30 में से 29 सही (~97%) |
 | 1 — sync engine | ✅ बना और टेस्ट हुआ (यही रिपॉज़िटरी) |
-| 1b — Streaming Availability (ऑडियो भाषा) | ⏸ रुका — RapidAPI subscribe होना बाक़ी |
+| 1b — Streaming Availability (deep link + ऑडियो) | 🟡 code तैयार (lib/sa.php, bin/sync_deeplinks.php) — RapidAPI subscribe + `sa.key` भरना + पहली दौड़ में live पुष्टि बाक़ी |
 | 2 — वेबसाइट | ✅ पूरा। होमपेज, title, platform, भाषा, changes (naya/hata) पन्ने + sitemap.xml — सब असली MariaDB पर परखे गए |
 | 3 — बंडल / tier / अलर्ट | ⬜ बाद में |
 
@@ -94,6 +94,7 @@ lib/
   db.php                PDO + state_get/state_set (कर्सर)
   http.php              retry वाला HTTP          ← नियम 1
   tmdb.php              TMDB client + कॉल गिनती
+  sa.php                Streaming Availability client (deep link + dub ऑडियो) — key खाली तो बंद
   util.php              slugify, norm_name, base_service_name, compute_tier
   run.php               run_start/finish, safety_check, lock  ← नियम 3
 bin/
@@ -101,6 +102,7 @@ bin/
   migrate.php           सिर्फ़ नई टेबलें बनाता है (idempotent, TMDB को नहीं छूता)
   sync_catalog.php      नए titles खोजना (कर्सर से resumable)
   sync_providers.php    providers जाँचना + diff + cast/genre/trailer  ← नियम 2
+  sync_deeplinks.php    SA से deep link + provider_audio (enrich only; watch_link भरता है)
   status.php            सेहत का पन्ना
 public/                 वेबसाइट का web root — index.php (router), .htaccess, assets/
 site/                   वेबसाइट का कोड — web.php (bootstrap), helpers, layout,

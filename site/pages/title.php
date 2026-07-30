@@ -89,6 +89,22 @@ try {
 } catch (Throwable $e) {
     // नई tables अभी मौजूद नहीं — कोई बात नहीं, बाक़ी पन्ना ज्यों का त्यों
 }
+
+// ---- dub/ऑडियो भाषा — किस OTT पर कौन सी (Streaming Availability से) ----------
+// ⚠️ यह फिल्म की भाषा (title_languages) से अलग है — CLAUDE.md §5, कभी मिलाना नहीं।
+// सिर्फ़ तभी दिखेगा जब असली डेटा भरा हो (SA चालू + परखा) — कोई झूठा दावा नहीं।
+$dubByProv = [];
+try {
+    foreach (all($PDO, "SELECT p.name, pa.lang_code FROM provider_audio pa
+                          JOIN providers p ON p.id = pa.provider_id
+                          JOIN availability a ON a.provider_id = p.id AND a.title_id = pa.title_id AND a.is_current = 1
+                         WHERE pa.title_id = ?
+                         ORDER BY p.display_priority, pa.lang_code", [$tid_i]) as $r) {
+        $dubByProv[$r['name']][] = $r['lang_code'];
+    }
+} catch (Throwable $e) {
+    // provider_audio अभी नहीं — कोई बात नहीं
+}
 $directors = array_values(array_filter($crew, fn ($c) => $c['role'] === 'Director'));
 $writers   = array_values(array_filter($crew,
     fn ($c) => in_array($c['role'], ['Writer', 'Screenplay', 'Story', 'Creator'], true)));
@@ -320,6 +336,23 @@ page_header([
   </div>
 </div>
 
+<?php if ($dubByProv !== []): ?>
+<h2><?= h(t('किस OTT पर कौन सी ऑडियो')) ?></h2>
+<p class="dim small"><?= h(t('यह इस title की OTT पर मिलने वाली ऑडियो/dub है — फिल्म की मूल भाषा से अलग।')) ?></p>
+<div class="offers">
+  <?php foreach ($dubByProv as $pname => $dlangs): $dlangs = array_values(array_unique($dlangs)); ?>
+  <div class="offer">
+    <div>
+      <div class="o-name"><?= h($pname) ?></div>
+      <div class="badges" style="margin:7px 0 0">
+        <?php foreach ($dlangs as $lc): ?><span class="badge"><?= h(lang_label($lc)) ?></span><?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
 <?php if (nz($title['overview'] ?? null) !== null): ?>
 <h2><?= h(t('कहानी')) ?></h2>
 <?php if (nz($meta['tagline'] ?? null) !== null): ?><p class="tagline">“<?= h($meta['tagline']) ?>”</p><?php endif; ?>
@@ -390,7 +423,7 @@ if ($now_names !== []) {
 </div>
 <?php endif; ?>
 
-<?php if ($langs !== []): ?>
+<?php if ($langs !== [] && $dubByProv === []): ?>
 <div class="note">
   <?= h(tf('ऊपर लिखी भाषाएँ इस %s की मूल/बोली गई भाषाएँ हैं। किस platform पर कौन सी ऑडियो (dub) मिलेगी — यह जानकारी जल्द जुड़ेगी।', media_label($title['media_type']))) ?>
 </div>
