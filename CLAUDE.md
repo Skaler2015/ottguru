@@ -153,10 +153,14 @@ site/                   वेबसाइट का कोड — web.php (boot
   sync हर बार title के लिए ताज़ा भर देता है (delete+reinsert), इन पर CASCADE है।
   `availability_changes` जैसा "ख़ज़ाना" नहीं — इन्हें खोकर दोबारा भरा जा सकता है।
   **मौजूदा tables नहीं छुईं** — सिर्फ़ जोड़ी गईं (backward compatible)।
-  ⚠️ **इस फ़ीचर को deploy करने के बाद एक बार `bin/migrate.php?k=<run_token>`
-  चलाना ज़रूरी है** — auto-deploy सिर्फ़ कोड कॉपी करता है, नई tables नहीं बनाता।
-  tables न हों तो sync मेटाडेटा चुपचाप छोड़ देता है (availability डेटा सुरक्षित
-  रहता है) और title पेज उनके बिना भी पूरा चलता है।
+  **सर्वर पर अलग से कुछ चलाना नहीं पड़ता** — `sync_providers.php` शुरू में जाँचता
+  है कि ये tables हैं या नहीं; न हों तो `schema.sql` से **खुद बना लेता है**
+  (self-heal, transaction शुरू होने से पहले, इसलिए DDL का implicit-commit
+  सुरक्षित)। bin/ folder `public_html` के बाहर है, इसलिए browser से
+  `bin/migrate.php` नहीं खुलता — self-heal इसी वजह से जोड़ा गया। `bin/migrate.php`
+  अब भी है (CLI/cron से explicit चलाने के लिए), पर ज़रूरी नहीं।
+  tables किसी वजह से न बनें तो sync मेटाडेटा चुपचाप छोड़ देता है (availability
+  डेटा सुरक्षित रहता है) और title पेज उनके बिना भी पूरा चलता है।
 
 ---
 

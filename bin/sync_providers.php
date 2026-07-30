@@ -29,14 +29,33 @@ run_reap_stale($PDO);
 $runId   = run_start($PDO, 'providers');
 
 // नई मेटाडेटा tables (genre/cast/trailer…) बनी हैं या नहीं?
-// अगर नहीं (सर्वर पर अभी migrate नहीं चला) तो मेटाडेटा लिखना छोड़ दें — वरना
-// एक भी missing-table error पूरे transaction को rollback करके availability डेटा
-// तक गँवा देगा। यानी: बहुमूल्य डेटा हमेशा सुरक्षित, मेटाडेटा बाद में जुड़ जाएगा।
-$hasMeta = (int) scalar($PDO, "SELECT COUNT(*) FROM information_schema.tables
-    WHERE table_schema = DATABASE() AND table_name = 'title_genres'") > 0;
+$has_meta_tables = static fn (PDO $pdo): bool =>
+    (int) scalar($pdo, "SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = 'title_genres'") > 0;
+
+$hasMeta = $has_meta_tables($PDO);
+
+// न बनी हों तो यहीं (transaction शुरू होने से पहले) खुद बना लें — self-heal।
+// schema.sql की सारी CREATE TABLE IF NOT EXISTS चलती हैं: मौजूदा tables नहीं
+// छूतीं, सिर्फ़ गायब वाली बनती हैं। इससे owner को अलग से कुछ चलाना नहीं पड़ता।
+// (DDL implicit commit करता है, पर यहाँ कोई transaction खुला नहीं है — सुरक्षित)
 if (!$hasMeta) {
-    logline('!! मेटाडेटा tables नहीं मिलीं — cast/genre/trailer इस दौड़ में छोड़े गए। '
-        . 'एक बार bin/migrate.php चलाइए, फिर अपने-आप भरने लगेंगे।');
+    logline('मेटाडेटा tables नहीं मिलीं — schema.sql से खुद बना रहे हैं (self-heal)…');
+    try {
+        $schema = (string) file_get_contents(OTT_ROOT . '/schema.sql');
+        $schema = preg_replace('/^\s*--.*$/m', '', $schema) ?? $schema;
+        foreach (array_filter(array_map('trim', explode(';', $schema))) as $st) {
+            if ($st !== '') {
+                $PDO->exec($st);
+            }
+        }
+        $hasMeta = $has_meta_tables($PDO);
+        logline($hasMeta ? 'नई tables बन गईं ✓' : '!! tables फिर भी नहीं बनीं — मेटाडेटा इस दौड़ में छूटेगा');
+    } catch (Throwable $e) {
+        // बना न पाए तो भी दौड़ रुके नहीं — availability डेटा हमेशा प्राथमिकता
+        $hasMeta = false;
+        logline('!! tables बनाते समय गड़बड़: ' . $e->getMessage() . ' — मेटाडेटा छोड़ा जाएगा');
+    }
 }
 $t0      = ms_now();
 $maxS    = (int) $CFG['batch']['max_seconds'];
