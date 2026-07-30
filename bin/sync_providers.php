@@ -218,7 +218,13 @@ foreach ($due as $t) {
 
     /* ---- providers ---- */
     $block = $d['watch/providers']['results'][$country] ?? null;
-    $pending[$tid]['link'] = $block['link'] ?? null;
+    // TMDB का 'link' सिर्फ़ themoviedb.org का aggregator पन्ना है (असली OTT deep
+    // link नहीं) — उसे watch_link में मत रखो, वरना "अभी देखें" TMDB खोल देगा।
+    // असली deep link भविष्य में Streaming Availability से आएगा।
+    $rawLink = (string) ($block['link'] ?? '');
+    $pending[$tid]['link'] = ($rawLink !== ''
+        && preg_match('~(themoviedb\.org|themoviedb\.com|justwatch\.com)~i', $rawLink) !== 1)
+        ? $rawLink : null;
 
     $desired = [];   // "pid|offer" => raw name
     if (is_array($block)) {

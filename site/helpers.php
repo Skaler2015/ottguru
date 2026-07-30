@@ -87,7 +87,10 @@ function provider_url(array $p): string
 function watch_url(array $offer, array $title): ?string
 {
     $link = trim((string) ($offer['watch_link'] ?? ''));
-    if ($link !== '') {
+    // TMDB/JustWatch का "watch" link असली per-provider deep link नहीं है — हर OTT के
+    // लिए वही होता है और themoviedb.org पर खुलता है। उसे छोड़कर नीचे OTT की search पर जाओ।
+    // (असली deep link — जैसे netflix.com/… — मिले तो वही चलेगा।)
+    if ($link !== '' && preg_match('~^https?://[^/]*(themoviedb\.org|themoviedb\.com|justwatch\.com)~i', $link) !== 1) {
         return $link;
     }
 
