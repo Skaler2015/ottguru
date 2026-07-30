@@ -87,6 +87,9 @@ $GLOBALS['__EN'] = [
     'अभी देखें'         => 'Watch now',
     'किराये / ख़रीद पर'  => 'Rent or buy',
     'कहानी'            => 'Story',
+    'किस OTT पर कौन सी ऑडियो' => 'Audio language by platform',
+    'यह इस title की OTT पर मिलने वाली ऑडियो/dub है — फिल्म की मूल भाषा से अलग।'
+        => 'Audio/dub available on each platform — separate from the film’s original language.',
     'ट्रेलर'            => 'Trailer',
     'कलाकार'           => 'Cast',
     '%s का ट्रेलर चलाएँ' => 'Play %s trailer',

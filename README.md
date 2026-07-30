@@ -128,6 +128,10 @@ hPanel → Advanced → Cron Jobs
 
 # catalog — हफ़्ते में 2 बार
 0 3 * * 1,4       /usr/bin/php /home/uXXXXXX/ottguru-sync/bin/sync_catalog.php >/dev/null 2>&1
+
+# deep link + dub ऑडियो (Streaming Availability) — तभी चलता है जब config में sa.key भरी हो
+# RapidAPI free tier कम है, इसलिए धीरे: रात में, per_run छोटा
+30 5 * * *        /usr/bin/php /home/uXXXXXX/ottguru-sync/bin/sync_deeplinks.php >/dev/null 2>&1
 ```
 
 दो दौड़ें एक साथ नहीं चलेंगी — file lock लगा हुआ है, इसलिए cron के

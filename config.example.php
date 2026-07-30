@@ -32,6 +32,17 @@ return [
     // वही default है। दिक़्क़त हो तो जाँच: README का "TMDB तक पहुँच" हिस्सा।
     'tmdb_base' => 'https://api.tmdb.org/3',
 
+    // ------------------------------------ Streaming Availability (deep links + dub ऑडियो)
+    // RapidAPI का "Streaming Availability" (movieofthenight)। यही असली per-OTT
+    // deep link (सीधे उस मूवी पर) और "इस OTT पर कौन सी ऑडियो/dub" देता है।
+    // पहले RapidAPI पर subscribe कीजिए (मुफ़्त tier भी है), फिर X-RapidAPI-Key यहाँ डालिए।
+    // 'key' खाली = फ़ीचर बंद (कुछ नहीं टूटता, TMDB वाला सब चलता रहता है)।
+    'sa' => [
+        'key'     => '',   // RapidAPI key
+        'host'    => 'streaming-availability.p.rapidapi.com',
+        'per_run' => 40,   // हर दौड़ में कितने titles (rate-limit के हिसाब से)
+    ],
+
     // ---------------------------------------------------------------- सुरक्षा
     // ब्राउज़र से स्क्रिप्ट चलाने के लिए ज़रूरी: ?k=यह-टोकन
     // cron (CLI) से चलाने पर टोकन नहीं चाहिए।
