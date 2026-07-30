@@ -199,17 +199,20 @@ for ($n = 0; $n < $pages; $n++) {
 
     /* ---------------- कर्सर आगे ----------------
        lang phase पहले पूरा होता है (हिंदी/regional सबसे पहले), फिर prov sweep,
-       फिर वापस lang (नया कंटेंट ताज़ा रखने के लिए)। दोनों की प्रगति अलग सहेजी जाती है। */
+       फिर वापस lang (नया कंटेंट ताज़ा रखने के लिए)। दोनों की प्रगति अलग सहेजी जाती है।
+       क्रम: page → mt → li — यानी हर भाषा में पहले फिल्में फिर सीरीज़, फिर अगली भाषा।
+       (पहले सारी भाषाओं की फिल्में होती थीं, सीरीज़ बहुत देर से — भारत में web series
+        OTT की जान हैं, इसलिए अब हर भाषा में movie+tv दोनों साथ-साथ आते हैं।) */
     if ($phase === 'lang') {
         $langC['page']++;
         if ($langC['page'] > max(1, $total)) {
             $langC['page'] = 1;
-            $langC['li']++;
-            if ($langC['li'] >= count($LANGS)) {
-                $langC['li'] = 0;
-                $langC['mt']++;
-                if ($langC['mt'] >= count($MT)) {
-                    $langC['mt'] = 0;
+            $langC['mt']++;                     // उसी भाषा का अगला media type (movie → tv)
+            if ($langC['mt'] >= count($MT)) {
+                $langC['mt'] = 0;
+                $langC['li']++;                 // दोनों हो गए → अगली भाषा
+                if ($langC['li'] >= count($LANGS)) {
+                    $langC['li'] = 0;
                     $phase = 'prov';        // भारतीय भाषाएँ पूरी → अब provider sweep
                     logline('भारतीय-भाषा चक्र पूरा → provider sweep शुरू');
                 }
