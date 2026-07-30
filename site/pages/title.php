@@ -80,41 +80,88 @@ if ($now_on !== []) {
     $desc = tf('%s अभी भारत में किसी OTT के सब्सक्रिप्शन में नहीं है। यह पहले कहाँ थी और कब हटी — पूरा इतिहास OTT गुरु पर।', $title['title']);
 }
 
-$jsonld = [
-    '@context'      => 'https://schema.org',
-    '@type'         => $is_tv ? 'TVSeries' : 'Movie',
-    'name'          => $title['title'],
-    'url'           => 'https://ottguru.in' . title_url($title),
+$node = [
+    '@type' => $is_tv ? 'TVSeries' : 'Movie',
+    'name'  => $title['title'],
+    'url'   => 'https://ottguru.in' . title_url($title),
 ];
 if (nz($title['original_title'] ?? null) !== null && $title['original_title'] !== $title['title']) {
-    $jsonld['alternateName'] = $title['original_title'];
+    $node['alternateName'] = $title['original_title'];
 }
 if (nz($title['overview'] ?? null) !== null) {
-    $jsonld['description'] = $title['overview'];
+    $node['description'] = $title['overview'];
 }
 if (nz($title['release_date'] ?? null) !== null) {
-    $jsonld['datePublished'] = $title['release_date'];
+    $node['datePublished'] = $title['release_date'];
 }
 if (tmdb_img($title['poster_path'], 'w500') !== null) {
-    $jsonld['image'] = tmdb_img($title['poster_path'], 'w500');
+    $node['image'] = tmdb_img($title['poster_path'], 'w500');
 }
 if ((float) $title['vote_average'] > 0 && (int) $title['vote_count'] >= 10) {
-    $jsonld['aggregateRating'] = [
-        '@type'       => 'AggregateRating',
-        'ratingValue' => (float) $title['vote_average'],
-        'bestRating'  => 10,
-        'ratingCount' => (int) $title['vote_count'],
+    $node['aggregateRating'] = [
+        '@type' => 'AggregateRating', 'ratingValue' => (float) $title['vote_average'],
+        'bestRating' => 10, 'ratingCount' => (int) $title['vote_count'],
     ];
 }
+
+// ---- FAQ — सिर्फ़ हमारे डेटा से (visible section + FAQPage schema, दोनों एक स्रोत) ----
+$paisaNames = array_values(array_unique(array_map(fn ($o) => $o['name'], $paisa)));
+$faqs = [];
+$faqs[] = [
+    'q' => tf('%s कहाँ देखें?', $title['title']),
+    'a' => $now_on !== []
+        ? tf('%s अभी %s पर सब्सक्रिप्शन में उपलब्ध है।', $title['title'], implode(', ', $now_on))
+          . ($paisaNames !== [] ? ' ' . tf('किराये/ख़रीद पर भी: %s।', implode(', ', $paisaNames)) : '')
+        : tf('%s अभी भारत में किसी OTT सब्सक्रिप्शन पर उपलब्ध नहीं है।', $title['title']),
+];
+if ($now_on !== []) {
+    $faqs[] = ['q' => tf('क्या %s %s पर है?', $title['title'], $now_on[0]),
+               'a' => tf('हाँ, %s अभी %s पर देखी जा सकती है।', $title['title'], $now_on[0])];
+}
+if (nz($title['release_date'] ?? null) !== null) {
+    $faqs[] = ['q' => tf('%s कब रिलीज़ हुई?', $title['title']),
+               'a' => tf('%s %s को रिलीज़ हुई थी।', $title['title'], hindi_date($title['release_date']))];
+}
+if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0) {
+    $faqs[] = ['q' => tf('%s की अवधि कितनी है?', $title['title']),
+               'a' => tf('%s की अवधि लगभग %d मिनट है।', $title['title'], (int) $title['runtime'])];
+}
+if ($langs !== []) {
+    $faqs[] = ['q' => tf('%s किन भाषाओं में है?', $title['title']),
+               'a' => tf('%s इन भाषाओं में है: %s।', $title['title'],
+                        implode(', ', array_map(fn ($l) => lang_label($l['lang_code']), $langs)))];
+}
+
+// ---- schema @graph: Movie/TVSeries + Breadcrumb + FAQ + Organization ----
+$graph = [$node];
+$graph[] = [
+    '@type' => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'item' => 'https://ottguru.in/'],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => $title['title'], 'item' => 'https://ottguru.in' . title_url($title)],
+    ],
+];
+if ($faqs !== []) {
+    $graph[] = [
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(fn ($f) => [
+            '@type' => 'Question', 'name' => $f['q'],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['a']],
+        ], $faqs),
+    ];
+}
+$graph[] = ['@type' => 'Organization', 'name' => 'OTTGuru', 'url' => 'https://ottguru.in/'];
 
 page_header([
     'title'       => tf('%s कहाँ देखें', $h1),
     'description' => $desc,
     'canonical'   => title_url($title),
     'image'       => tmdb_img($title['poster_path'], 'w500'),
-    'jsonld'      => $jsonld,
+    'jsonld'      => ['@context' => 'https://schema.org', '@graph' => $graph],
 ]);
 ?>
+<?php $bd = tmdb_img($title['backdrop_path'] ?? null, 'w1280'); ?>
+<?php if ($bd !== null): ?><div class="t-backdrop" style="background-image:url('<?= h($bd) ?>')"></div><?php endif; ?>
 
 <div class="t-head">
   <?php $poster = tmdb_img($title['poster_path'], 'w342'); ?>
@@ -132,10 +179,26 @@ page_header([
       <?php if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0): ?>
         · <?= h(tf('%d मिनट', (int) $title['runtime'])) ?>
       <?php endif; ?>
-      <?php if ((float) $title['vote_average'] > 0): ?>
-        · <span class="rating">★ <?= number_format((float) $title['vote_average'], 1) ?></span><span class="dim">/10</span>
-      <?php endif; ?>
     </p>
+
+    <?php if ((float) $title['vote_average'] > 0):
+      $pct = (int) round((float) $title['vote_average'] / 10 * 100);
+      $dash = round(157.08 * $pct / 100, 1);
+      $col = $pct >= 70 ? 'var(--good)' : ($pct >= 50 ? 'var(--warn)' : 'var(--pink)'); ?>
+    <div class="scorebox">
+      <div class="score">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="25" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="4"></circle>
+          <circle cx="29" cy="29" r="25" fill="none" stroke="<?= $col ?>" stroke-width="4" stroke-linecap="round" stroke-dasharray="<?= $dash ?> 157.08"></circle>
+        </svg>
+        <span class="num"><?= number_format((float) $title['vote_average'], 1) ?><s>/10</s></span>
+      </div>
+      <div class="meta">
+        <div><b>TMDB</b> <?= OTT_LANG === 'hi' ? 'यूज़र स्कोर' : 'user score' ?></div>
+        <?php if ((int) $title['vote_count'] > 0): ?><div><?= number_format((int) $title['vote_count']) ?> <?= OTT_LANG === 'hi' ? 'वोट' : 'votes' ?></div><?php endif; ?>
+      </div>
+    </div>
+    <?php endif; ?>
 
     <?php if ($langs !== []): ?>
     <div class="badges">
@@ -243,12 +306,58 @@ if ($now_names !== []) {
 </div>
 <?php endif; ?>
 
+<h2><?= h(t('फिल्म के तथ्य')) ?></h2>
+<div class="facts">
+  <?php if ($year !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'रिलीज़ वर्ष' : 'Year' ?></div><div class="v"><?= h($year) ?></div></div><?php endif; ?>
+  <div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'किस्म' : 'Type' ?></div><div class="v"><?= h(media_label($title['media_type'])) ?></div></div>
+  <?php if (!$is_tv && (int) ($title['runtime'] ?? 0) > 0): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'अवधि' : 'Runtime' ?></div><div class="v"><?= (int) $title['runtime'] ?> <?= OTT_LANG === 'hi' ? 'मिनट' : 'min' ?></div></div><?php endif; ?>
+  <?php if ($original !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'मूल भाषा' : 'Original language' ?></div><div class="v"><?= h(lang_label($original[0])) ?></div></div><?php endif; ?>
+  <?php if (nz($title['release_date'] ?? null) !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'रिलीज़ तारीख़' : 'Release date' ?></div><div class="v" style="font-size:14px"><?= h(hindi_date($title['release_date'])) ?></div></div><?php endif; ?>
+  <?php if (nz($title['status'] ?? null) !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'स्थिति' : 'Status' ?></div><div class="v" style="font-size:14px"><?= h($title['status']) ?></div></div><?php endif; ?>
+</div>
+
+<?php if ($faqs !== []): ?>
+<h2><?= h(t('अक्सर पूछे सवाल')) ?></h2>
+<div class="faq">
+  <?php foreach ($faqs as $i => $f): ?>
+  <details<?= $i === 0 ? ' open' : '' ?>><summary><?= h($f['q']) ?></summary><div class="a"><?= h($f['a']) ?></div></details>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php
+$shareUrl = 'https://ottguru.in' . title_url($title);
+$u = rawurlencode($shareUrl);
+$txt = rawurlencode($title['title'] . ' — OTTGuru');
+?>
+<h2><?= h(t('शेयर करें')) ?></h2>
+<div class="share" data-url="<?= h($shareUrl) ?>">
+  <a href="https://wa.me/?text=<?= $txt ?>%20<?= $u ?>" target="_blank" rel="noopener"><span class="ic" style="background:#25D366"></span>WhatsApp</a>
+  <a href="https://t.me/share/url?url=<?= $u ?>&text=<?= $txt ?>" target="_blank" rel="noopener"><span class="ic" style="background:#2AABEE"></span>Telegram</a>
+  <a href="https://twitter.com/intent/tweet?url=<?= $u ?>&text=<?= $txt ?>" target="_blank" rel="noopener"><span class="ic" style="background:#111"></span>X</a>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=<?= $u ?>" target="_blank" rel="noopener"><span class="ic" style="background:#1877F2"></span>Facebook</a>
+  <button type="button" class="s-copy"><span class="ic" style="background:var(--grad)"></span><?= h(t('लिंक कॉपी')) ?></button>
+</div>
+
 <script>
 (function(){
+  // timeline reveal
   var els = document.querySelectorAll('[data-reveal]');
-  if (matchMedia('(prefers-reduced-motion:reduce)').matches){els.forEach(function(e){e.classList.add('in');});return;}
-  var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.2});
-  els.forEach(function(e){io.observe(e);});
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches){
+    els.forEach(function(e){e.classList.add('in');});
+  } else {
+    var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.2});
+    els.forEach(function(e){io.observe(e);});
+  }
+  // share — copy link
+  var sc = document.querySelector('.share .s-copy'), box = document.querySelector('.share');
+  if (sc && box){ sc.addEventListener('click', function(){
+    var url = box.getAttribute('data-url'), old = sc.lastChild.textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+      .then(function(){ sc.lastChild.textContent = <?= json_encode(t('कॉपी हो गया ✓'), JSON_UNESCAPED_UNICODE) ?>; })
+      .catch(function(){ prompt(<?= json_encode(t('यह लिंक कॉपी कीजिए:'), JSON_UNESCAPED_UNICODE) ?>, url); })
+      .finally(function(){ setTimeout(function(){ sc.lastChild.textContent = old; }, 1800); });
+  }); }
 })();
 </script>
 <?php page_footer(); ?>
