@@ -114,6 +114,56 @@ if (empty($_SESSION['csrf'])) {
 $CSRF     = (string) $_SESSION['csrf'];
 $selfPath = strtok((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), '?');
 
+/**
+ * कई URLs की एक साथ (parallel) live जाँच — HTTP code + कितने ms + noindex?
+ * हर पेज का सिर्फ़ शुरुआती ~9KB खींचता है (head में robots/meta आ जाता है),
+ * इसलिए बड़ा sitemap भी पूरा download नहीं होता। curl न हो तो code=0।
+ */
+function admin_live_check(array $urls): array
+{
+    if (!function_exists('curl_multi_init')) {
+        return array_map(fn () => ['code' => 0, 'ms' => 0, 'noindex' => false], $urls);
+    }
+    $mh = curl_multi_init();
+    $hs = $buf = [];
+    foreach ($urls as $k => $u) {
+        $buf[$k] = '';
+        $ch = curl_init($u);
+        curl_setopt_array($ch, [
+            CURLOPT_HEADER         => true,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_USERAGENT      => 'OTTGuru-health/1.0',
+            CURLOPT_WRITEFUNCTION  => function ($c, $data) use (&$buf, $k) {
+                $buf[$k] .= $data;
+                return strlen($buf[$k]) > 9000 ? 0 : strlen($data);   // 0 = बस, इतना काफ़ी
+            },
+        ]);
+        curl_multi_add_handle($mh, $ch);
+        $hs[$k] = $ch;
+    }
+    do {
+        curl_multi_exec($mh, $running);
+        if ($running > 0) {
+            curl_multi_select($mh, 0.4);
+        }
+    } while ($running > 0);
+    $out = [];
+    foreach ($hs as $k => $ch) {
+        $out[$k] = [
+            'code'    => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
+            'ms'      => (int) round(curl_getinfo($ch, CURLINFO_TOTAL_TIME) * 1000),
+            'noindex' => stripos($buf[$k], 'noindex') !== false,
+        ];
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($mh);
+    return $out;
+}
+
 // ---- POST क्रियाएँ (PRG: लिखो → redirect → दिखाओ) ----
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
     if (!hash_equals($CSRF, (string) ($_POST['csrf'] ?? ''))) {
@@ -181,6 +231,64 @@ if (($_GET['view'] ?? '') === 'title') {
         } catch (Throwable $ex) { /* मेटाडेटा tables न हों तो कोई बात नहीं */ }
     }
     require OTT_ROOT . '/site/pages/admin_title.php';
+    exit;
+}
+
+// ============================================================================
+//  Pages & index — /admin?view=pages
+//  हर page-type + गिनती + index नीति, और ज़रूरी पेजों की असली live जाँच।
+//  (असली "Google ने index किया या नहीं" सिर्फ़ Search Console बताता है —
+//   यहाँ हम "live है? + index होने लायक़ है?" दिखाते हैं।)
+// ============================================================================
+if (($_GET['view'] ?? '') === 'pages') {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $base   = $scheme . '://' . (string) ($_SERVER['HTTP_HOST'] ?? 'ottguru.in');
+    $cc     = $CFG['country'] ?? 'IN';
+
+    // page-type गिनती — sitemap के नियमों से मेल खाती (सिर्फ़ जिन पर कुछ है)
+    $nMovie = (int) scalar($PDO, "SELECT COUNT(DISTINCT t.id) FROM titles t
+        JOIN availability a ON a.title_id=t.id AND a.is_current=1 WHERE t.media_type='movie'");
+    $nSeries = (int) scalar($PDO, "SELECT COUNT(DISTINCT t.id) FROM titles t
+        JOIN availability a ON a.title_id=t.id AND a.is_current=1 WHERE t.media_type='tv'");
+    $nProvLive = (int) scalar($PDO, "SELECT COUNT(DISTINCT p.id) FROM providers p
+        JOIN availability a ON a.provider_id=p.id AND a.is_current=1 AND a.country=?
+        AND a.offer_type IN ('flatrate','ads','free') WHERE p.is_active=1", [$cc]);
+    $nLang = (int) scalar($PDO, "SELECT COUNT(*) FROM (
+        SELECT 1 FROM availability a
+          JOIN providers p ON p.id=a.provider_id AND p.is_active=1
+          JOIN titles t ON t.id=a.title_id
+          JOIN title_languages l ON l.title_id=t.id
+         WHERE a.country=? AND a.is_current=1 AND a.offer_type IN ('flatrate','ads','free')
+         GROUP BY p.id, l.lang_code, t.media_type HAVING COUNT(DISTINCT t.id)>=5) x", [$cc]);
+
+    $ptypes = [
+        ['होमपेज',              '/',                          1,                    true],
+        ['फिल्म पेज',           '/movie/…',                   $nMovie,              true],
+        ['सीरीज़ पेज',           '/series/…',                  $nSeries,             true],
+        ['platform पेज',        '/platform/…',                $nProvLive,           true],
+        ['भाषा पेज',            '/platform/…/hindi-movies',   $nLang,               true],
+        ['changes पेज',         '/naya · /hata (+platform)',  2 + 2 * $nProvLive,   true],
+        ['खोज',                 '/search',                    null,                 false],
+        ['admin',               '/admin',                     null,                 false],
+    ];
+    $totalIndex = 1 + $nMovie + $nSeries + $nProvLive + $nLang + (2 + 2 * $nProvLive);
+
+    // ज़रूरी पेजों की असली live जाँच के लिए URLs (नमूने DB से)
+    $sM = one($PDO, "SELECT t.slug, t.media_type FROM titles t
+        JOIN availability a ON a.title_id=t.id AND a.is_current=1
+        WHERE t.media_type='movie' ORDER BY t.popularity DESC LIMIT 1");
+    $sP = one($PDO, "SELECT p.slug FROM providers p
+        JOIN availability a ON a.provider_id=p.id AND a.is_current=1
+        WHERE p.is_active=1 GROUP BY p.id ORDER BY COUNT(*) DESC LIMIT 1");
+    $check = ['होमपेज' => $base . '/', 'sitemap.xml' => $base . '/sitemap.xml', 'robots.txt' => $base . '/robots.txt'];
+    if ($sM) { $check['नमूना फिल्म पेज'] = $base . '/movie/' . rawurlencode($sM['slug']); }
+    if ($sP) { $check['नमूना platform पेज'] = $base . '/platform/' . rawurlencode($sP['slug']); }
+    $check['/naya'] = $base . '/naya';
+    $check['/hata'] = $base . '/hata';
+    $check['/search'] = $base . '/search?q=test';
+    $live = admin_live_check($check);
+
+    require OTT_ROOT . '/site/pages/admin_pages.php';
     exit;
 }
 
@@ -315,6 +423,7 @@ $runcell = function (?array $r) use ($e): string {
   <span class="tag">Admin</span>
   <span class="hpill <?= $health[0] ?>"><span class="d"></span><?= $e($health[1]) ?></span>
   <span class="when"><?= $e($now) ?></span>
+  <a class="alogout" href="?view=pages"><?= OTT_LANG === 'hi' ? 'पेज + index' : 'Pages' ?></a>
   <a class="alogout" href="?logout=1"><?= OTT_LANG === 'hi' ? 'लॉगआउट ↩' : 'Log out ↩' ?></a>
 </div></div>
 

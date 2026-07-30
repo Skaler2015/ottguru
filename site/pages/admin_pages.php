@@ -1,0 +1,118 @@
+<?php
+/**
+ * Admin — Pages & index  (/admin?view=pages)
+ * हर page-type + गिनती + index नीति, और ज़रूरी पेजों की असली live जाँच।
+ * admin.php से मिलता है: $base, $ptypes, $totalIndex, $check, $live,
+ *                        $nMovie, $nSeries, $nProvLive, $nLang, $selfPath, $CSRF, $e, $nf
+ */
+declare(strict_types=1);
+$L = OTT_LANG === 'hi';
+
+// live status → रंग + लेबल
+$statusOf = function (array $r) use ($L): array {
+    $c = (int) $r['code'];
+    if ($c === 0)                 return ['bad',  $L ? 'नहीं खुला' : 'down'];
+    if ($c >= 200 && $c < 300)    return $r['noindex'] ? ['warn', 'noindex'] : ['ok', 'live · index'];
+    if ($c >= 300 && $c < 400)    return ['warn', 'redirect ' . $c];
+    return ['bad', ($L ? 'गड़बड़ ' : 'error ') . $c];
+};
+?><!doctype html>
+<html lang="<?= OTT_LANG ?>">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>OTTGuru · Admin · <?= $L ? 'पेज + index' : 'Pages' ?></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+
+<div class="abar"><div class="wrap abar-in">
+  <a class="logo" href="/">OTT<span>Guru</span></a>
+  <span class="tag">Admin</span>
+  <a class="alogout" href="<?= $e($selfPath) ?>" style="margin-left:auto"><?= $L ? '← डैशबोर्ड' : '← Dashboard' ?></a>
+  <a class="alogout" href="<?= $e($selfPath) ?>?view=pages"><?= $L ? '↻ फिर जाँचें' : '↻ Re-check' ?></a>
+  <a class="alogout" href="<?= $e($selfPath) ?>?logout=1"><?= $L ? 'लॉगआउट ↩' : 'Log out ↩' ?></a>
+</div></div>
+
+<main class="wrap" style="padding-top:22px;max-width:900px">
+
+  <h1 style="font-size:24px;margin-bottom:4px"><?= $L ? 'पेज + Index status' : 'Pages & index' ?></h1>
+  <p class="dim" style="margin:0 0 18px;max-width:66ch">
+    <?= $L ? 'आपकी साइट के हर तरह के पेज, कितने URL हैं, और वे Google में index होने चाहिए या नहीं। साथ में ज़रूरी पेजों की अभी-अभी असली जाँच — खुल रहे हैं या नहीं।'
+           : 'Every page type on your site, how many URLs, and whether they should be indexed. Plus a live check of the key pages right now.' ?>
+  </p>
+
+  <!-- ====== live health ====== -->
+  <div class="panel">
+    <div class="ph"><h3><?= $L ? 'ज़रूरी पेज — अभी live?' : 'Key pages — live now?' ?></h3>
+      <span class="t"><?= $L ? 'असली जाँच' : 'real check' ?> · <?= $e(date('H:i')) ?></span></div>
+    <div style="overflow-x:auto"><table class="atable">
+      <tr><th></th><th><?= $L ? 'पेज' : 'page' ?></th><th>HTTP</th><th>ms</th><th>status</th></tr>
+      <?php foreach ($check as $label => $url):
+        $r = $live[$label] ?? ['code' => 0, 'ms' => 0, 'noindex' => false];
+        [$cls, $txt] = $statusOf($r);
+        $dotc = $cls === 'ok' ? 'var(--good)' : ($cls === 'warn' ? 'var(--warn)' : 'var(--pink)'); ?>
+      <tr>
+        <td class="n" style="color:<?= $dotc ?>;font-size:15px">●</td>
+        <td><a href="<?= $e($url) ?>" target="_blank" rel="noopener"><?= $e($label) ?></a></td>
+        <td class="n"><?= (int) $r['code'] ?: '—' ?></td>
+        <td class="n dim"><?= (int) $r['ms'] ?></td>
+        <td class="n" style="color:<?= $dotc ?>"><?= $e($txt) ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </table></div>
+    <p class="dim small" style="margin:12px 2px 0">
+      <?= $L ? '🟢 live + index होने लायक़ · 🟡 live पर noindex (जैसे /search — यह जान-बूझकर है) · 🔴 नहीं खुला — तुरंत देखिए।'
+             : '🟢 live + indexable · 🟡 live but noindex (e.g. /search — intentional) · 🔴 down — check now.' ?>
+    </p>
+  </div>
+
+  <!-- ====== page types ====== -->
+  <div class="panel" style="margin-top:16px">
+    <div class="ph"><h3><?= $L ? 'सारे page-type' : 'All page types' ?></h3>
+      <span class="t"><?= $nf($totalIndex) ?> <?= $L ? 'index-योग्य URL' : 'indexable URLs' ?></span></div>
+    <div style="overflow-x:auto"><table class="atable">
+      <tr><th><?= $L ? 'तरह' : 'type' ?></th><th><?= $L ? 'उदाहरण' : 'example' ?></th><th><?= $L ? 'कितने' : 'count' ?></th><th>index?</th><th>sitemap?</th></tr>
+      <?php foreach ($ptypes as [$name, $ex, $cnt, $idx]): ?>
+      <tr>
+        <td><?= $e($name) ?></td>
+        <td class="dim"><span class="mono" style="font-size:12.5px"><?= $e($ex) ?></span></td>
+        <td class="n"><?= $cnt === null ? '<span class="dim">—</span>' : $nf((int) $cnt) ?></td>
+        <td class="n"><?= $idx ? '<span style="color:var(--good)">✓ index</span>' : '<span style="color:var(--warn)">noindex</span>' ?></td>
+        <td class="n"><?= $idx ? '<span style="color:var(--good)">✓</span>' : '<span class="dim">—</span>' ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </table></div>
+    <p class="dim small" style="margin:12px 2px 0">
+      <?= $L ? 'sitemap में सिर्फ़ वही पेज हैं जिन पर असल में कुछ है (ख़ाली/thin पेज नहीं — यही Google-deindex से बचाता है)। इसलिए “कितने” की गिनती बदलती रहती है जैसे-जैसे availability भरती है।'
+             : 'The sitemap lists only pages with real content (no thin pages — this is what avoids Google deindex). So counts grow as availability fills.' ?>
+    </p>
+  </div>
+
+  <!-- ====== sitemap + GSC ====== -->
+  <div class="agrid" style="margin-top:16px">
+    <div class="panel">
+      <div class="ph"><h3>Sitemap</h3></div>
+      <table class="atable">
+        <tr><td><?= $L ? 'कुल index-योग्य URL' : 'total indexable URLs' ?></td><td class="n"><?= $nf($totalIndex) ?></td></tr>
+        <tr><td>sitemap.xml</td><td class="n"><a href="<?= $e($base) ?>/sitemap.xml" target="_blank" rel="noopener"><?= $L ? 'खोलें ↗' : 'open ↗' ?></a></td></tr>
+        <tr><td>robots.txt</td><td class="n"><a href="<?= $e($base) ?>/robots.txt" target="_blank" rel="noopener"><?= $L ? 'खोलें ↗' : 'open ↗' ?></a></td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="ph"><h3><?= $L ? 'असली Google index' : 'Real Google index' ?></h3></div>
+      <p class="dim" style="font-size:13.5px;margin:0 0 10px">
+        <?= $L ? '“Google ने असल में कितने पेज index किए” — यह सिर्फ़ Google Search Console बताता है (कोई साइट ख़ुद नहीं जान सकती)। वहाँ sitemap जमा कर दीजिए और “Pages” रिपोर्ट देखिए।'
+               : 'The true “how many pages Google indexed” only Search Console can tell. Submit the sitemap there and see the “Pages” report.' ?>
+      </p>
+      <a class="badge" href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
