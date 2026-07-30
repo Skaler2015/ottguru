@@ -49,18 +49,13 @@ if (count($seg) === 1 && $seg[0] === 'search') {
     exit;
 }
 
-// गुप्त admin path — config.php में admin_path सेट हो (जैसे 'skaler2015') तो
-// सीधे /skaler2015 से admin खुलता है, लंबा ?k=token लिखे बिना। path खुद ही चाबी है,
-// इसलिए वह config.php (git से बाहर) में रहता है — कोड में कभी नहीं।
+// admin dashboard — /admin  या गुप्त  /<admin_path>  (जैसे /skaler2015)।
+// दोनों admin.php पर जाते हैं, जो password login माँगता है (session में याद रहता है)।
+// गुप्त path config.php (git से बाहर) में रहता है — कोड में कभी नहीं। इस तरह
+// सुरक्षा दो-परत: URL पता हो + password पता हो, तभी भीतर।
 $adminPath = trim((string) ($CFG['admin_path'] ?? ''));
-if ($adminPath !== '' && count($seg) === 1 && hash_equals($adminPath, $seg[0])) {
-    $GLOBALS['ADMIN_AUTHED'] = true;
-    require OTT_ROOT . '/site/pages/admin.php';
-    exit;
-}
-
-// admin dashboard — /admin?k=<run_token>  (token से सुरक्षित, noindex)
-if (count($seg) === 1 && $seg[0] === 'admin') {
+if ((count($seg) === 1 && $seg[0] === 'admin')
+    || ($adminPath !== '' && count($seg) === 1 && hash_equals($adminPath, $seg[0]))) {
     require OTT_ROOT . '/site/pages/admin.php';
     exit;
 }
