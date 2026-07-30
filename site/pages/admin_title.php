@@ -44,7 +44,8 @@ $L = OTT_LANG === 'hi';
   <div class="alarm" style="border-color:rgba(0,210,106,.4);background:rgba(0,210,106,.08)">
     <b style="color:var(--good)">✓ हो गया।</b>
     <?= $flash === 'recheck' ? ($L ? 'यह title अगली providers दौड़ में सबसे पहले जाँचा जाएगा।' : 'Queued — will be re-checked first on the next providers run.')
-       : ($flash === 'tier' ? ($L ? 'tier बदल दी गई।' : 'Tier updated.') : '') ?>
+       : ($flash === 'tier' ? ($L ? 'tier बदल दी गई।' : 'Tier updated.')
+       : ($flash === 'insent' ? ($L ? 'URL IndexNow (Bing/Yandex) को भेज दिया।' : 'URL sent to IndexNow (Bing/Yandex).') : '')) ?>
   </div>
   <?php endif; ?>
 
@@ -85,6 +86,14 @@ $L = OTT_LANG === 'hi';
         <button type="submit" class="abtn" <?= (int) $t['tier'] === $tv ? 'disabled' : '' ?>><?= $e($lbl) ?></button>
       </form>
       <?php endforeach; ?>
+      <?php if (($inKey ?? '') !== ''): ?>
+      <form method="post" action="<?= $e($selfPath) ?>?view=title&id=<?= (int) $t['id'] ?>">
+        <input type="hidden" name="csrf" value="<?= $e($CSRF) ?>">
+        <input type="hidden" name="do" value="indexnow_one">
+        <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
+        <button type="submit" class="abtn" title="IndexNow → Bing/Yandex">🔍 <?= $L ? 'index सबमिट करें' : 'Submit to index' ?></button>
+      </form>
+      <?php endif; ?>
     </div>
     <p class="dim small" style="margin:12px 2px 2px">
       <?= $L ? '“दोबारा जाँचें” = अगली providers दौड़ इसे सबसे पहले जाँचेगी (कुछ मिनट/घंटे में, cron पर निर्भर)। कोई डेटा अभी नहीं बदलता।'

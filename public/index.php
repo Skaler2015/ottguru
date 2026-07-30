@@ -99,4 +99,16 @@ if ($path === 'sitemap.xml') {
     exit;
 }
 
+// IndexNow की verify फ़ाइल — /<key>.txt  (key admin से बनकर sync_state में रहती है;
+// Bing/Yandex इसे पढ़कर पक्का करते हैं कि सबमिट करने वाला साइट का असली मालिक है)
+if (count($seg) === 1 && preg_match('/^[a-f0-9]{16,64}\.txt$/', $seg[0]) === 1) {
+    $ink = (string) state_get($PDO, 'indexnow_key', '');
+    if ($ink !== '' && hash_equals($ink . '.txt', $seg[0])) {
+        header('Content-Type: text/plain; charset=utf-8');
+        header('X-Robots-Tag: noindex');
+        echo $ink;
+        exit;
+    }
+}
+
 not_found();
