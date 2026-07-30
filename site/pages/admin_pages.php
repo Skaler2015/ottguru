@@ -8,12 +8,14 @@
 declare(strict_types=1);
 $L = OTT_LANG === 'hi';
 
-// live status → रंग + लेबल
-$statusOf = function (array $r) use ($L): array {
+// live status → रंग + लेबल।  code 0 = "जाँच नहीं हो पाई" (पेज down है ऐसा ज़रूरी नहीं —
+// हो सकता है सर्वर ख़ुद तक न पहुँच पाया हो); असली गड़बड़ सिर्फ़ 4xx/5xx पर।
+$anyUnchecked = false;
+$statusOf = function (array $r) use ($L, &$anyUnchecked): array {
     $c = (int) $r['code'];
-    if ($c === 0)                 return ['bad',  $L ? 'नहीं खुला' : 'down'];
-    if ($c >= 200 && $c < 300)    return $r['noindex'] ? ['warn', 'noindex'] : ['ok', 'live · index'];
-    if ($c >= 300 && $c < 400)    return ['warn', 'redirect ' . $c];
+    if ($c === 0)              { $anyUnchecked = true; return ['warn', $L ? 'जाँच नहीं हुई' : 'not checked']; }
+    if ($c >= 200 && $c < 300)   return $r['noindex'] ? ['warn', 'noindex'] : ['ok', 'live · index'];
+    if ($c >= 300 && $c < 400)   return ['warn', 'redirect ' . $c];
     return ['bad', ($L ? 'गड़बड़ ' : 'error ') . $c];
 };
 ?><!doctype html>
@@ -66,9 +68,15 @@ $statusOf = function (array $r) use ($L): array {
       <?php endforeach; ?>
     </table></div>
     <p class="dim small" style="margin:12px 2px 0">
-      <?= $L ? '🟢 live + index होने लायक़ · 🟡 live पर noindex (जैसे /search — यह जान-बूझकर है) · 🔴 नहीं खुला — तुरंत देखिए।'
-             : '🟢 live + indexable · 🟡 live but noindex (e.g. /search — intentional) · 🔴 down — check now.' ?>
+      <?= $L ? '🟢 live + index होने लायक़ · 🟡 live पर noindex (जैसे /search — यह जान-बूझकर है) या जाँच नहीं हुई · 🔴 असली गड़बड़ (4xx/5xx) — तुरंत देखिए।'
+             : '🟢 live + indexable · 🟡 noindex (intentional) or not checked · 🔴 real error (4xx/5xx) — check now.' ?>
     </p>
+    <?php if ($anyUnchecked): ?>
+    <div class="okline" style="background:rgba(255,197,66,.1);border-color:rgba(255,197,66,.3);color:#ffd985;margin-top:10px">
+      <?= $L ? 'कुछ पेज “जाँच नहीं हुई” दिखे — इसका मतलब वे down हैं ऐसा ज़रूरी नहीं। सर्वर कभी-कभी अपने ही पेज सीधे नहीं पढ़ पाता। ऊपर पेज के नाम पर क्लिक करके ख़ुद देख लीजिए — browser में खुलें तो सब ठीक है।'
+             : 'Some pages show “not checked” — that doesn’t mean they’re down. The server can’t always fetch its own pages directly. Click a page name above to verify in your browser.' ?>
+    </div>
+    <?php endif; ?>
   </div>
 
   <!-- ====== page types ====== -->
