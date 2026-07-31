@@ -121,32 +121,47 @@ page_header([
 ?>
 
 <section class="hero">
-  <span class="kicker"><span class="pulse"></span><?= h(t('रोज़ रात अपने-आप जाँचा जाता है')) ?></span>
-  <?php if (OTT_LANG === 'hi'): ?>
-    <h1>भारत का <span class="g">OTT इंटेलिजेंस</span> प्लेटफ़ॉर्म</h1>
-  <?php else: ?>
-    <h1>India's <span class="g">OTT Intelligence</span> Platform</h1>
-  <?php endif; ?>
-  <p class="sub"><?= t('खोजिए, तुलना कीजिए और नज़र रखिए — कौन सी फिल्म किस platform पर है, और सबसे ख़ास: <b>कब से कब तक कहाँ थी</b>।') ?></p>
-
-  <form class="hsearch" action="/search" method="get" role="search">
-    <div class="inner">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input name="q" placeholder="<?= h(t('फिल्म, सीरीज़ या platform खोजिए…')) ?>" aria-label="<?= h(t('खोजें')) ?>" autocomplete="off">
-      <button type="submit"><?= h(t('खोजें')) ?></button>
+  <?php
+  // hero के पीछे posters की दीवार — असली trending posters से (जिनके पास poster है)
+  $wall = array_values(array_filter($hot, fn ($t) => nz($t['poster_path'] ?? null) !== null));
+  $wall = array_slice($wall, 0, 14);
+  ?>
+  <?php if ($wall !== []): ?>
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-wall">
+      <?php foreach (array_merge($wall, $wall, $wall) as $t): ?><img src="<?= h(tmdb_img($t['poster_path'], 'w92')) ?>" alt="" loading="lazy" decoding="async"><?php endforeach; ?>
     </div>
-  </form>
-
-  <?php if ($provs !== []): ?>
-  <div class="pbadges">
-    <?php foreach (array_slice($provs, 0, 10) as $p): $lg = tmdb_img($p['logo_path'], 'w45'); ?>
-      <a class="pbadge" href="<?= h(provider_url($p)) ?>">
-        <?php if ($lg !== null): ?><img class="lg" style="object-fit:cover" src="<?= h($lg) ?>" alt=""><?php endif; ?>
-        <?= h($p['name']) ?>
-      </a>
-    <?php endforeach; ?>
   </div>
   <?php endif; ?>
+
+  <div class="hero-fg">
+    <span class="kicker"><span class="pulse"></span><?= h(t('रोज़ रात अपने-आप जाँचा जाता है')) ?></span>
+    <?php if (OTT_LANG === 'hi'): ?>
+      <h1>भारत का <span class="g">OTT इंटेलिजेंस</span> प्लेटफ़ॉर्म</h1>
+    <?php else: ?>
+      <h1>India's <span class="g">OTT Intelligence</span> Platform</h1>
+    <?php endif; ?>
+    <p class="sub"><?= t('खोजिए, तुलना कीजिए और नज़र रखिए — कौन सी फिल्म किस platform पर है, और सबसे ख़ास: <b>कब से कब तक कहाँ थी</b>।') ?></p>
+
+    <form class="hsearch" action="/search" method="get" role="search">
+      <div class="inner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input name="q" placeholder="<?= h(t('फिल्म, सीरीज़ या platform खोजिए…')) ?>" aria-label="<?= h(t('खोजें')) ?>" autocomplete="off">
+        <button type="submit"><?= h(t('खोजें')) ?></button>
+      </div>
+    </form>
+
+    <?php if ($provs !== []): ?>
+    <div class="pbadges">
+      <?php foreach (array_slice($provs, 0, 10) as $p): $lg = tmdb_img($p['logo_path'], 'w45'); ?>
+        <a class="pbadge" href="<?= h(provider_url($p)) ?>">
+          <?php if ($lg !== null): ?><img class="lg" style="object-fit:cover" src="<?= h($lg) ?>" alt=""><?php endif; ?>
+          <?= h($p['name']) ?>
+        </a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
 </section>
 
 <?php if ($stats !== [] && (int) ($stats['titles'] ?? 0) > 0): ?>
