@@ -468,12 +468,13 @@ $txt = rawurlencode($title['title'] . ' — OTTGuru');
 
 <script>
 (function(){
-  // timeline reveal
+  // timeline reveal — JS हो तभी छिपाकर animate (no-JS पर content दिखता ही रहे)
   var els = document.querySelectorAll('[data-reveal]');
   if (matchMedia('(prefers-reduced-motion:reduce)').matches){
     els.forEach(function(e){e.classList.add('in');});
   } else {
-    var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.2});
+    els.forEach(function(e){e.classList.add('anim');});
+    var io = new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}});},{threshold:.15});
     els.forEach(function(e){io.observe(e);});
   }
   // trailer — क्लिक पर ही YouTube iframe लोड (तब तक कोई third-party नहीं)
