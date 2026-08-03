@@ -302,3 +302,50 @@ CREATE TABLE IF NOT EXISTS provider_audio (
   CONSTRAINT fk_pa_title FOREIGN KEY (title_id)
     REFERENCES titles (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 16. provider_plans — किसी OTT के plan tier (Mobile/Basic/Premium…)।
+--     ⚠️ पूरी तरह मैन्युअल — किसी API से नहीं मिलता (CLAUDE.md §1 बिंदु 3,
+--     §7 काम-5)। यही JustWatch से असली फ़र्क़: "₹149 Mobile plan TV पर चलेगा?"
+--     admin से भरा/मिटाया जाता है; sync इसे कभी नहीं छूता।
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS provider_plans (
+  id          SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  provider_id SMALLINT UNSIGNED NOT NULL,
+  name        VARCHAR(60)       NOT NULL,               -- "Mobile","Basic","Premium"
+  price_inr   SMALLINT UNSIGNED NOT NULL,               -- कीमत (period की इकाई में)
+  period      VARCHAR(10)       NOT NULL DEFAULT 'month',-- month/quarter/year
+  max_quality VARCHAR(12)       NULL,                    -- "480p","1080p","4K"
+  screens     TINYINT UNSIGNED  NULL,                    -- एक साथ कितनी screens
+  tv_allowed  TINYINT(1)        NOT NULL DEFAULT 1,      -- TV पर चलेगा? (₹149 वाला सवाल)
+  has_ads     TINYINT(1)        NOT NULL DEFAULT 0,
+  devices     VARCHAR(120)      NULL,                    -- "Mobile, Tablet" आदि
+  sort_order  SMALLINT          NOT NULL DEFAULT 0,      -- सस्ते→महँगे
+  updated_at  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_pp_prov (provider_id, sort_order, price_inr),
+  CONSTRAINT fk_pp_prov FOREIGN KEY (provider_id)
+    REFERENCES providers (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 17. telecom_bundles — कौन सा telecom recharge किस OTT को मुफ़्त देता है।
+--     ⚠️ पूरी तरह मैन्युअल (CLAUDE.md §1 बिंदु 2, §7 काम-5)।
+--     "Jio ₹399 में Hotstar पहले से मुफ़्त" — भारत का असली सवाल।
+--     admin से भरा/मिटाया जाता है; sync इसे कभी नहीं छूता।
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS telecom_bundles (
+  id            SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  operator      VARCHAR(24)       NOT NULL,        -- "Jio","Airtel","Vi"
+  plan_price    SMALLINT UNSIGNED NOT NULL,        -- recharge ₹
+  plan_label    VARCHAR(80)       NULL,            -- "₹399 · 28 दिन · 2.5GB/दिन"
+  provider_id   SMALLINT UNSIGNED NOT NULL,        -- कौन सा OTT शामिल
+  ott_tier      VARCHAR(60)       NULL,            -- "Mobile","Premium" (कौन सा tier)
+  validity_days SMALLINT UNSIGNED NULL,
+  updated_at    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_tb_prov (provider_id),
+  KEY ix_tb_op (operator, plan_price),
+  CONSTRAINT fk_tb_prov FOREIGN KEY (provider_id)
+    REFERENCES providers (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

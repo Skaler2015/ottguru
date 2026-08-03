@@ -164,6 +164,16 @@ site/                   वेबसाइट का कोड — web.php (boot
   tables किसी वजह से न बनें तो sync मेटाडेटा चुपचाप छोड़ देता है (availability
   डेटा सुरक्षित रहता है) और title पेज उनके बिना भी पूरा चलता है।
 
+- **मैन्युअल-डेटा tables (नई): `provider_plans` + `telecom_bundles`।** यही §1 का
+  असली भेद — plan tier की सच्चाई ("₹149 Mobile TV पर चलेगा?") और telecom बंडल
+  ("Jio ₹399 में Hotstar मुफ़्त")। **किसी API से नहीं मिलता — admin से हाथ से भरा
+  जाता है** (`/admin?view=manual`)। sync इन्हें **कभी नहीं छूता**। दोनों पर
+  provider_id FK CASCADE। ये मेटाडेटा जैसी disposable नहीं, पर "ख़ज़ाना" भी नहीं —
+  हमारी अपनी curated मेहनत है, इसलिए soft रखिए (admin से delete होता है, sync से
+  नहीं)। खाली हों तो provider/title पेज पर section अपने-आप छुपते हैं (try/catch);
+  self-heal उसी schema.sql से बनता है। admin में plan/बंडल जोड़ते/हटाते ही
+  page-cache साफ़ हो जाता है ताकि बदलाव तुरंत दिखे।
+
 ---
 
 ## 6. होस्टिंग की सीमाएँ
@@ -205,6 +215,9 @@ provider_titles_per_run × रोज़ की दौड़ें ≥ वो स
 4. **WhatsApp चैनल + watchlist अलर्ट** — भारत में email से 10 गुना असरदार,
    और यही बार-बार ट्रैफ़िक लाएगा
 5. मैन्युअल डेटा: plan tier के नियम (~60 rows), टेलीकॉम बंडल (~100 rows)
+   — 🟢 **ढाँचा तैयार** (`provider_plans` + `telecom_bundles` tables, `/admin?view=manual`
+   से भरने का UI, provider + title पेज पर दिखता है)। अब सिर्फ़ **rows भरना** बाक़ी:
+   हर बड़े OTT के 3–4 plan, फिर Jio/Airtel/Vi के मुख्य recharge। भरते ही live।
 
 ---
 

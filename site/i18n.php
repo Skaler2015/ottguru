@@ -157,6 +157,15 @@ $GLOBALS['__EN'] = [
     // ---- provider पन्ना ----
     '%s पर क्या-क्या है' => "What's on %s",
     '%s पर क्या-क्या है (%d titles)' => "What's on %s (%d titles)",
+    // मैन्युअल डेटा — plan tier + telecom बंडल (§1 का असली भेद)
+    '%s के plan — भारत' => '%s plans — India',
+    'कौन सा plan किस पर चलेगा — ख़ासकर TV पर। यह जानकारी हमने ख़ुद जुटाई है।'
+        => 'Which plan works where — especially on TV. Data we curate ourselves.',
+    'कीमतें बदल सकती हैं — देखने से पहले OTT ऐप में पक्का कर लें।'
+        => 'Prices can change — confirm in the OTT app before you watch.',
+    '%s इन telecom recharge में मुफ़्त' => '%s is free with these telecom recharges',
+    'हो सकता है यह आपके मौजूदा मोबाइल plan में पहले से शामिल हो — अलग पैसे न दें।'
+        => 'It may already be included in your current mobile plan — don\'t pay twice.',
     'भारत में अभी %s %s सब्सक्रिप्शन/मुफ़्त में · रोज़ अपडेट होता है'
         => '%s %s on subscription/free in India right now · updated daily',
     'फिल्में'            => 'movies',
