@@ -192,6 +192,16 @@ section, .sec{margin-top:44px}
 .gcard .rows .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:2px;line-height:1.1}
 .gcard .cta{font-size:13px;color:var(--blue);font-weight:600}
 
+/* श्रेणी chips — genre hub पेजों पर link (होमपेज) */
+.gchips{display:flex;flex-wrap:wrap;gap:10px}
+.gchip{display:inline-flex;align-items:center;gap:9px;background:var(--card);
+  border:1px solid var(--line);border-radius:999px;padding:8px 9px 8px 16px;
+  color:var(--ink);font-weight:600;font-size:14px;transition:.16s;box-shadow:var(--sh1)}
+.gchip:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--sh2)}
+.gchip .c{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink2);
+  background:rgba(79,140,255,.14);border-radius:999px;padding:2px 9px;min-width:26px;text-align:center}
+.gchip:hover .c{color:var(--blue)}
+
 /* ---------------------------------------------------------------- analytics panels */
 .grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}}

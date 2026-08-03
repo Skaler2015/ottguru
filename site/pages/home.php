@@ -64,6 +64,41 @@ $hot = all($PDO, "
      LIMIT 18",
     [$country]);
 
+// ---- सबसे बढ़िया रेटिंग (quality — popularity से अलग axis) -----------------------
+// vote_count की दहलीज़ ज़रूरी: वरना 1-वोट-10.0 वाली अनजान title ऊपर आ जाती।
+$top_rated = all($PDO, "
+    SELECT DISTINCT t.slug, t.title, t.release_year, t.poster_path, t.media_type,
+           t.vote_average, t.vote_count
+      FROM availability a
+      JOIN titles t ON t.id = a.title_id
+     WHERE a.country = ?
+       AND a.is_current = 1
+       AND a.offer_type IN ('flatrate','ads','free')
+       AND t.vote_count >= 50
+     ORDER BY t.vote_average DESC, t.vote_count DESC
+     LIMIT 18",
+    [$country]);
+
+// ---- श्रेणी से चुनिए — genre hub पेजों पर link (Content Hub internal-linking) ------
+// ≥3 उपलब्ध titles वाली श्रेणियाँ ही (thin नहीं; sitemap के नियम से मेल)।
+$genres_home = [];
+try {
+    $genres_home = all($PDO, "
+        SELECT g.slug, g.name_en, COUNT(DISTINCT t.id) AS n
+          FROM title_genres tg
+          JOIN genres g ON g.id = tg.genre_id
+          JOIN titles t ON t.id = tg.title_id
+          JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                             AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+         GROUP BY g.id
+        HAVING n >= 3
+         ORDER BY n DESC
+         LIMIT 18",
+        [$country]);
+} catch (Throwable $e) {
+    // genres/title_genres table अभी नहीं — कोई बात नहीं, section छूट जाएगा
+}
+
 // ---- इस हफ़्ते नया आया (dedup) --------------------------------------------------
 $naya = all($PDO, "
     SELECT t.slug, t.title, t.release_year, t.poster_path, t.media_type,
@@ -196,6 +231,28 @@ page_header([
 </section>
 <?php endif; ?>
 
+<?php if ($top_rated !== []): ?>
+<section>
+  <div class="head">
+    <div><span class="eyebrow"><?= OTT_LANG === 'hi' ? 'क्वालिटी' : 'Quality' ?></span><h2><?= h(t('सबसे बढ़िया रेटिंग')) ?></h2>
+      <p class="dim"><?= h(t('दर्शकों की रेटिंग के हिसाब से — जो अभी किसी OTT पर हैं।')) ?></p></div>
+    <a class="link" href="/browse?sort=rating"><?= h(t('सब देखिए →')) ?></a>
+  </div>
+  <div class="rail">
+    <?php foreach ($top_rated as $t): $img = tmdb_img($t['poster_path'], 'w342'); ?>
+    <a class="pcard" href="<?= h(title_url($t)) ?>">
+      <?php if ($img !== null): ?><img loading="lazy" src="<?= h($img) ?>" alt="<?= h(tf('%s का poster', $t['title'])) ?>"><?php else: ?><span class="noposter"><?= h(mb_substr($t['title'], 0, 40, 'UTF-8')) ?></span><?php endif; ?>
+      <span class="rate">★ <b><?= number_format((float) $t['vote_average'], 1) ?></b></span>
+      <span class="ov">
+        <span class="t"><?= h($t['title']) ?></span>
+        <span class="m"><?= h((string) ($t['release_year'] ?? '')) ?> · <?= h(media_label($t['media_type'])) ?></span>
+      </span>
+    </a>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php if ($naya !== []): ?>
 <section>
   <div class="head">
@@ -210,6 +267,22 @@ page_header([
         <span class="t"><?= h($t['title']) ?></span>
         <span class="tag g"><?= (int) $t['pkitne'] > 1 ? h(tf('%d platforms पर', (int) $t['pkitne'])) : h(tf('%s पर', $t['pname'])) ?></span>
       </span>
+    </a>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php if ($genres_home !== []): ?>
+<section>
+  <div class="head">
+    <div><span class="eyebrow"><?= OTT_LANG === 'hi' ? 'श्रेणियाँ' : 'Genres' ?></span><h2><?= h(t('श्रेणी से चुनिए')) ?></h2>
+      <p class="dim"><?= h(t('हर श्रेणी के वे titles जो अभी किसी OTT पर मौजूद हैं।')) ?></p></div>
+  </div>
+  <div class="gchips">
+    <?php foreach ($genres_home as $g): ?>
+    <a class="gchip" href="/genre/<?= h(rawurlencode($g['slug'])) ?>">
+      <?= h($g['name_en']) ?><span class="c"><?= (int) $g['n'] ?></span>
     </a>
     <?php endforeach; ?>
   </div>
