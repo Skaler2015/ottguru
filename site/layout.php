@@ -54,6 +54,7 @@ function page_header(array $opt = []): void
     <a class="logo" href="/">OTT<span>Guru</span></a>
     <nav class="topnav">
       <a class="tlink" href="/"><?= h(t('होम')) ?></a>
+      <a class="tlink" href="/browse"><?= h(t('ब्राउज़')) ?></a>
       <a class="tlink" href="/naya"><?= h(t('नया आया')) ?></a>
       <a class="tlink" href="/hata"><?= h(t('क्या हटा')) ?></a>
       <a class="nav-search" href="/search" aria-label="<?= h(t('खोजें')) ?>"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></a>
@@ -112,6 +113,7 @@ function page_footer(): void
 
 <nav class="bnav">
   <a href="/" class="on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/></svg><?= h(t('होम')) ?></a>
+  <a href="/browse"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><?= h(t('ब्राउज़')) ?></a>
   <a href="/search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><?= h(t('खोज')) ?></a>
   <a href="/naya"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><?= h(t('नया आया')) ?></a>
   <a href="/hata"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg><?= h(t('क्या हटा')) ?></a>

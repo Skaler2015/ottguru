@@ -19,6 +19,7 @@ $urls = [];   // हर entry: [loc, lastmod|null]
 // ---- होमपेज + changes पेज ------------------------------------------------------
 $aaj = date('Y-m-d');
 $urls[] = [$base . '/', $aaj];
+$urls[] = [$base . '/browse', $aaj];
 $urls[] = [$base . '/naya', $aaj];
 $urls[] = [$base . '/hata', $aaj];
 
