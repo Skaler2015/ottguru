@@ -132,16 +132,23 @@ $noun = $f_type === 'tv' ? t('वेब सीरीज़') : ($f_type === 'mov
 $h1   = trim(implode(' ', $bits) . ' ' . $noun);
 if ($provRow) { $h1 .= ' — ' . $provRow['name']; }
 
+$crumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => OTT_LANG === 'hi' ? 'ब्राउज़' : 'Browse', 'url' => '/browse'],
+];
+
 page_header([
     'title'       => $filtered ? tf('%s — अभी OTT पर', $h1) : t('Browse — फिल्में और सीरीज़ फ़िल्टर कीजिए'),
     'description' => tf('%s को platform, भाषा, genre, साल और रेटिंग से फ़िल्टर कीजिए — अभी भारत में OTT पर क्या-क्या है, एक जगह। OTT गुरु।', $noun),
     'canonical'   => '/browse',
     'noindex'     => $filtered,   // filtered views index न हों (faceted-nav जाल से बचाव)
+    'breadcrumb'  => $crumbs,
     'jsonld'      => [
         '@context' => 'https://schema.org', '@type' => 'CollectionPage',
         'name' => 'Browse — OTTGuru', 'url' => 'https://ottguru.in/browse',
     ],
 ]);
+crumbs($crumbs);
 
 // active filters को URL में बनाए रखने का helper (pager/sort के लिए)
 $q_with = static function (array $over) use ($f_type, $f_genre, $f_lang, $f_plat, $f_year, $f_offer, $f_sort): string {

@@ -84,6 +84,46 @@ function person_url(array $p): string
 }
 
 /**
+ * BreadcrumbList schema — $items: [['name'=>..,'url'=>path|null], …]।
+ * आख़िरी item मौजूदा पन्ना (url हो भी सकता है, न भी)। page_header को
+ * 'breadcrumb' में यही array देते हैं; वो JSON-LD बना देता है।
+ */
+function breadcrumb_schema(array $items): array
+{
+    $list = [];
+    foreach (array_values($items) as $i => $it) {
+        $node = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => (string) $it['name']];
+        if (!empty($it['url'])) {
+            $node['item'] = 'https://ottguru.in' . $it['url'];
+        }
+        $list[] = $node;
+    }
+    return ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $list];
+}
+
+/**
+ * दिखने वाला breadcrumb — schema से मेल खाता (Google यही चाहता है)।
+ * पन्ने page_header के ठीक बाद body में इसे बुलाते हैं।
+ */
+function crumbs(array $items): void
+{
+    $items = array_values($items);
+    $last  = count($items) - 1;
+    echo '<nav class="crumbs" aria-label="breadcrumb">';
+    foreach ($items as $i => $it) {
+        if ($i > 0) {
+            echo '<span class="sep" aria-hidden="true">/</span>';
+        }
+        if (!empty($it['url']) && $i !== $last) {
+            echo '<a href="' . h($it['url']) . '">' . h((string) $it['name']) . '</a>';
+        } else {
+            echo '<span class="cur">' . h((string) $it['name']) . '</span>';
+        }
+    }
+    echo "</nav>\n";
+}
+
+/**
  * "अभी देखें" बटन का असली destination।
  *   1. सबसे पहले sync से मिला deep link (सीधे उस OTT पर वही मूवी)
  *   2. न मिले तो उसी OTT पर title के नाम की search — यूज़र दो क्लिक में मूवी तक

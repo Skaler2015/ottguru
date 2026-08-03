@@ -80,6 +80,12 @@ $dusra_total = (int) scalar($PDO, "
        AND t.media_type = ?",
     [(int) $prov['id'], $country, $want_lang, $want_type === 'tv' ? 'movie' : 'tv']);
 
+$crumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => $prov['name'], 'url' => provider_url($prov)],
+    ['name' => $h1, 'url' => $self],
+];
+
 page_header([
     'title'       => $h1 . ' (' . $total . ')',
     'description' => tf('%1$s India पर अभी %2$d %3$s %4$s सब्सक्रिप्शन में हैं — पूरी सूची, रोज़ अपडेट। OTT गुरु पर।',
@@ -87,6 +93,7 @@ page_header([
     'canonical'   => $self,
     'image'       => tmdb_img($prov['logo_path'], 'w154'),
     'noindex'     => $total < 5 || $page > 1,   // बहुत छोटा या paginated पन्ना index न हो
+    'breadcrumb'  => $crumbs,
     'jsonld'      => [
         '@context' => 'https://schema.org',
         '@type'    => 'CollectionPage',
@@ -94,6 +101,7 @@ page_header([
         'url'      => 'https://ottguru.in' . $self,
     ],
 ]);
+crumbs($crumbs);
 ?>
 
 <div class="phead">

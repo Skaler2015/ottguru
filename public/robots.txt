@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+# crawl-budget: ये पन्ने noindex हैं ही — crawler का समय इन पर न लगे
+Disallow: /search
+Disallow: /admin
+
 Sitemap: https://ottguru.in/sitemap.xml

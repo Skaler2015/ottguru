@@ -11,7 +11,10 @@ declare(strict_types=1);
  *   description — meta description
  *   canonical   — canonical path, जैसे '/movie/jawan-2023'
  *   image       — og:image का पूरा URL
+ *   image_alt   — og:image का alt (न हो तो title)
+ *   og_type     — og:type (default 'website'; title पेज 'video.movie'/'video.tv_show')
  *   jsonld      — schema.org array (जैसा है वैसा छप जाएगा)
+ *   breadcrumb  — [['name'=>..,'url'=>path], …] → BreadcrumbList schema अपने-आप
  *   noindex     — true = robots को मना करना (ख़ाली/paginated पन्नों के लिए)
  */
 function page_header(array $opt = []): void
@@ -19,12 +22,18 @@ function page_header(array $opt = []): void
     $site  = 'OTT Guru';
     $title = isset($opt['title']) ? $opt['title'] . ' — ' . $site : t('OTT Guru — कौन सी फिल्म किस OTT पर है');
     $desc  = $opt['description'] ?? t('कौन सी फिल्म या वेब सीरीज़ किस OTT platform पर है — Netflix, Prime Video, Hotstar, ZEE5, SonyLIV। platform बदलने का पूरा इतिहास सिर्फ़ यहाँ।');
+    $descS = mb_substr($desc, 0, 200, 'UTF-8');
+    $ogType = $opt['og_type'] ?? 'website';
+    $ogUrl  = !empty($opt['canonical']) ? 'https://ottguru.in' . $opt['canonical'] : null;
+    $img    = $opt['image'] ?? null;
+    $imgAlt = $opt['image_alt'] ?? $title;
     ?>
 <!doctype html>
 <html lang="<?= OTT_LANG ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e1a21">
 <title><?= h($title) ?></title>
 <meta name="description" content="<?= h(mb_substr($desc, 0, 300, 'UTF-8')) ?>">
 <?php if (!empty($opt['noindex'])): ?>
@@ -33,19 +42,35 @@ function page_header(array $opt = []): void
 <?php if (!empty($opt['canonical'])): ?>
 <link rel="canonical" href="https://ottguru.in<?= h($opt['canonical']) ?>">
 <?php endif; ?>
+<meta property="og:site_name" content="OTT Guru">
 <meta property="og:title" content="<?= h($title) ?>">
-<meta property="og:description" content="<?= h(mb_substr($desc, 0, 200, 'UTF-8')) ?>">
-<meta property="og:type" content="website">
+<meta property="og:description" content="<?= h($descS) ?>">
+<meta property="og:type" content="<?= h($ogType) ?>">
 <meta property="og:locale" content="<?= OTT_LANG === 'hi' ? 'hi_IN' : 'en_IN' ?>">
-<?php if (!empty($opt['image'])): ?>
-<meta property="og:image" content="<?= h($opt['image']) ?>">
+<?php if ($ogUrl !== null): ?>
+<meta property="og:url" content="<?= h($ogUrl) ?>">
+<?php endif; ?>
+<?php if ($img !== null): ?>
+<meta property="og:image" content="<?= h($img) ?>">
+<meta property="og:image:alt" content="<?= h($imgAlt) ?>">
+<?php endif; ?>
+<meta name="twitter:card" content="<?= $img !== null ? 'summary_large_image' : 'summary' ?>">
+<meta name="twitter:title" content="<?= h($title) ?>">
+<meta name="twitter:description" content="<?= h($descS) ?>">
+<?php if ($img !== null): ?>
+<meta name="twitter:image" content="<?= h($img) ?>">
+<meta name="twitter:image:alt" content="<?= h($imgAlt) ?>">
 <?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://image.tmdb.org">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/site.css">
 <?php if (!empty($opt['jsonld'])): ?>
 <script type="application/ld+json"><?= json_encode($opt['jsonld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+<?php endif; ?>
+<?php if (!empty($opt['breadcrumb'])): ?>
+<script type="application/ld+json"><?= json_encode(breadcrumb_schema($opt['breadcrumb']), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
 <?php endif; ?>
 </head>
 <body>

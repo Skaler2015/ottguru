@@ -131,12 +131,18 @@ $desc = tf('%s India पर अभी %d %s सब्सक्रिप्शन
 
 $self = provider_url($prov) . ($type !== '' ? '?type=' . $type : '');
 
+$crumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => $prov['name'], 'url' => provider_url($prov)],
+];
+
 page_header([
     'title'       => tf('%s पर क्या-क्या है (%d titles)', $prov['name'], $total),
     'description' => $desc,
     'canonical'   => provider_url($prov),
     'image'       => tmdb_img($prov['logo_path'], 'w154'),
     'noindex'     => $page > 1,   // paginated पन्ने index न हों — पहला ही काफ़ी है
+    'breadcrumb'  => $crumbs,
     'jsonld'      => [
         '@context' => 'https://schema.org',
         '@type'    => 'CollectionPage',
@@ -144,6 +150,7 @@ page_header([
         'url'      => 'https://ottguru.in' . provider_url($prov),
     ],
 ]);
+crumbs($crumbs);
 ?>
 
 <div class="phead">
