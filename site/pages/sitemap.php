@@ -65,6 +65,23 @@ foreach ($combos as $c) {
     ];
 }
 
+// ---- genre पेज — सिर्फ़ जिन पर कम से कम 3 उपलब्ध titles हैं (thin नहीं) ----------
+try {
+    foreach (all($PDO, "
+        SELECT g.slug, COUNT(DISTINCT t.id) AS n
+          FROM title_genres tg
+          JOIN genres g ON g.id = tg.genre_id
+          JOIN titles t ON t.id = tg.title_id
+          JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                             AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+         GROUP BY g.id
+        HAVING n >= 3", [$country]) as $g) {
+        $urls[] = [$base . '/genre/' . rawurlencode($g['slug']), $aaj];
+    }
+} catch (Throwable $e) {
+    // genres table अभी नहीं — कोई बात नहीं
+}
+
 // ---- query 9: title पेज — सिर्फ़ वे जिन पर अभी कुछ उपलब्ध है --------------------
 $titles = all($PDO, "
     SELECT t.slug, t.media_type,
