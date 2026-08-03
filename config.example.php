@@ -99,6 +99,18 @@ return [
         'retry_sleep' => 1200,  // मिलीसेकंड
     ],
 
+    // ---------------------------------------------------------------- page-cache
+    // हल्का file-based full-page cache (Redis का shared-hosting विकल्प)।
+    // डेटा सिर्फ़ रात की sync में बदलता है, इसलिए दिन भर पेज static रहते हैं —
+    // HIT पर पूरी DB-query + rendering बच जाती है। sync पूरा होने पर अपने-आप साफ़।
+    // admin/search/sitemap कभी cache नहीं होते। बंद करना हो तो 'enabled' => false.
+    // 'dir' public_html के बाहर होना चाहिए (config.php की तरह)।
+    'cache' => [
+        'enabled' => true,
+        'ttl'     => 7200,               // सेकंड — sync छूट भी जाए तो इतने बाद ताज़ा
+        'dir'     => __DIR__ . '/cache', // बदल-कर public_html के बाहर कोई फोल्डर
+    ],
+
     // ---------------------------------------------------------------- लॉग
     'log_dir' => __DIR__ . '/logs',
 ];

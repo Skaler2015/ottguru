@@ -533,4 +533,10 @@ run_finish($PDO, $runId, 'done', [
     'removed' => $remCount,
 ], $note);
 
+// डेटा बदला → full-page cache बासी हो गया, साफ़ कर दो (अगली request ताज़ा बनाएगी)।
+if (($addCount + $remCount) > 0 && function_exists('cache_clear_all')) {
+    $cleared = cache_clear_all();
+    logline("page-cache साफ़: {$cleared} फ़ाइलें हटीं");
+}
+
 lock_release($lock);

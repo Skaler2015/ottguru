@@ -304,6 +304,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
         exit;
     }
 
+    // page-cache मैन्युअल साफ़ (कभी sync के बाहर कुछ बदला हो तो)
+    if ($do === 'cache_clear') {
+        $n = function_exists('cache_clear_all') ? cache_clear_all() : 0;
+        header('Location: ' . $selfPath . '?ok=cc' . $n);
+        exit;
+    }
+
     header('Location: ' . $selfPath);
     exit;
 }
@@ -506,6 +513,8 @@ $recent = all($PDO, "SELECT c.change_type, c.changed_on, t.title, p.name prov, c
 
 $unknown = state_get($PDO, 'unknown_providers', []);
 $cursor  = state_get($PDO, 'catalog_cursor', []);
+$cacheOn = function_exists('cache_enabled') && cache_enabled();
+$cacheSt = function_exists('cache_stats') ? cache_stats() : ['files' => 0, 'bytes' => 0];
 $now     = date('d M Y, H:i');
 
 $runcell = function (?array $r) use ($e): string {
@@ -703,6 +712,23 @@ $runcell = function (?array $r) use ($e): string {
       <?php if ($recent === []): ?><tr><td colspan="4" class="dim">अभी कुछ नहीं</td></tr><?php endif; ?>
     </table></div>
   </div>
+</div>
+
+<!-- page-cache — रफ़्तार -->
+<div class="panel" style="margin-top:16px">
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'पेज-कैश' : 'Page cache' ?></h3>
+    <span class="t"><?= $cacheOn ? ($nf($cacheSt['files']) . ' ' . (OTT_LANG === 'hi' ? 'फ़ाइलें' : 'files') . ' · ' . number_format($cacheSt['bytes'] / 1048576, 1) . ' MB') : (OTT_LANG === 'hi' ? 'बंद' : 'off') ?></span></div>
+  <?php if (preg_match('/^cc(\d+)$/', $flash, $ccm)): ?><div class="okline">✓ <?= OTT_LANG === 'hi' ? 'कैश साफ़ — ' : 'Cleared — ' ?><?= $nf((int) $ccm[1]) ?> <?= OTT_LANG === 'hi' ? 'फ़ाइलें हटीं।' : 'files removed.' ?></div><?php endif; ?>
+  <p class="dim small" style="margin:0 0 10px">
+    <?= OTT_LANG === 'hi'
+        ? 'दिन भर पेज इसी कैश से तेज़ी से मिलते हैं (कोई DB query नहीं)। हर रात sync अपने-आप साफ़ कर देता है। कुछ मैन्युअल बदला हो तो नीचे से साफ़ करें।'
+        : 'Pages are served fast from this cache all day (no DB query). The nightly sync clears it automatically. Clear it below if you changed something by hand.' ?>
+  </p>
+  <form method="post" action="<?= $e($selfPath) ?>" style="display:inline">
+    <input type="hidden" name="csrf" value="<?= $e($CSRF) ?>">
+    <input type="hidden" name="do" value="cache_clear">
+    <button type="submit" class="abtn"><?= OTT_LANG === 'hi' ? 'कैश साफ़ करें' : 'Clear cache' ?></button>
+  </form>
 </div>
 
 <!-- thin-page audit — SEO जोखिम -->

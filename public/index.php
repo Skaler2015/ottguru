@@ -30,6 +30,11 @@ if (PHP_SAPI === 'cli-server') {
     }
 }
 
+// full-page cache — HIT हो तो यहीं से भेजकर exit (कोई DB query, कोई render नहीं);
+// MISS पर output बफ़र शुरू, पेज बनने पर अपने-आप सहेज लेता है। admin/search/sitemap
+// को cache_key_for_request() ख़ुद छोड़ देता है, इसलिए यहाँ शर्त नहीं चाहिए।
+page_cache_serve_or_start();
+
 $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
 $path = rawurldecode($path);
 $seg  = $path === '' ? [] : explode('/', $path);

@@ -81,5 +81,6 @@ require OTT_ROOT . '/lib/db.php';
 require OTT_ROOT . '/lib/http.php';
 require OTT_ROOT . '/lib/tmdb.php';
 require OTT_ROOT . '/lib/run.php';
+require OTT_ROOT . '/lib/cache.php';   // sync के अंत में cache_clear_all() के लिए
 
 $PDO = db_connect($CFG['db']);

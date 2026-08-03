@@ -35,6 +35,7 @@ if (isset($_GET['lang'])) {
 
 require OTT_ROOT . '/lib/util.php';
 require OTT_ROOT . '/lib/db.php';
+require OTT_ROOT . '/lib/cache.php';
 require OTT_ROOT . '/site/i18n.php';
 require OTT_ROOT . '/site/helpers.php';
 
