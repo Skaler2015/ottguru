@@ -74,6 +74,12 @@ $GLOBALS['__EN'] = [
     '%s पर'             => 'On %s',
     '%d platforms पर'   => 'On %d platforms',
     'अभी चर्चा में'       => 'Trending now',
+    'सबसे बढ़िया रेटिंग'   => 'Top rated',
+    'दर्शकों की रेटिंग के हिसाब से — जो अभी किसी OTT पर हैं।'
+        => 'By viewer rating — titles on an OTT right now.',
+    'श्रेणी से चुनिए'      => 'Browse by genre',
+    'हर श्रेणी के वे titles जो अभी किसी OTT पर मौजूद हैं।'
+        => 'Titles in each genre that are on an OTT right now.',
 
     // ---- title पन्ना ----
     '%s कहाँ देखें'     => 'Where to watch %s',
