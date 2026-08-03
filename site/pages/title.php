@@ -24,7 +24,7 @@ $country = $CFG['country'] ?? 'IN';
 
 // ---- query 1: अभी कहाँ है --------------------------------------------------
 $offers = all($PDO, "
-    SELECT p.slug, p.name, p.logo_path, a.offer_type, a.watch_link, a.first_seen
+    SELECT p.id AS provider_id, p.slug, p.name, p.logo_path, a.offer_type, a.watch_link, a.first_seen
       FROM availability a
       JOIN providers p ON p.id = a.provider_id
      WHERE a.title_id = ?
@@ -105,6 +105,35 @@ try {
 } catch (Throwable $e) {
     // provider_audio अभी नहीं — कोई बात नहीं
 }
+
+// ---- मैन्युअल डेटा: इस title जिन OTT पर है उनका सबसे सस्ता plan + telecom बंडल --
+// (§1 — कोई API नहीं देता।) provider_id पर keyed; try/catch — tables/डेटा न हों तो चुप।
+$planMin = [];    // provider_id => ['price'=>, 'name'=>, 'tv_allowed'=>]
+$bundleBy = [];   // provider_id => [ ['operator'=>, 'plan_price'=>], … ]
+$provIds = array_values(array_unique(array_map(fn ($o) => (int) $o['provider_id'], $offers)));
+if ($provIds !== []) {
+    $in = implode(',', array_fill(0, count($provIds), '?'));
+    try {
+        // हर provider का सबसे सस्ता plan (एक ही row) — कीमत, नाम, TV allowed
+        foreach (all($PDO, "SELECT pp.provider_id, pp.name, pp.price_inr, pp.period, pp.tv_allowed
+                              FROM provider_plans pp
+                              JOIN (SELECT provider_id, MIN(price_inr) mp FROM provider_plans
+                                     WHERE provider_id IN ($in) GROUP BY provider_id) m
+                                ON m.provider_id = pp.provider_id AND m.mp = pp.price_inr
+                             WHERE pp.provider_id IN ($in)", array_merge($provIds, $provIds)) as $r) {
+            if (!isset($planMin[(int) $r['provider_id']])) {
+                $planMin[(int) $r['provider_id']] = $r;
+            }
+        }
+        foreach (all($PDO, "SELECT provider_id, operator, plan_price FROM telecom_bundles
+                             WHERE provider_id IN ($in) ORDER BY plan_price", $provIds) as $r) {
+            $bundleBy[(int) $r['provider_id']][] = $r;
+        }
+    } catch (Throwable $e) {
+        // provider_plans / telecom_bundles अभी नहीं — कोई बात नहीं
+    }
+}
+
 $directors = array_values(array_filter($crew, fn ($c) => $c['role'] === 'Director'));
 $writers   = array_values(array_filter($crew,
     fn ($c) => in_array($c['role'], ['Writer', 'Screenplay', 'Story', 'Creator'], true)));
@@ -335,13 +364,24 @@ crumbs($tcrumbs);
       </div>
     <?php else: ?>
       <div class="offers">
-        <?php foreach ($stream as $o): ?>
+        <?php foreach ($stream as $o): $pid = (int) $o['provider_id'];
+          $pm = $planMin[$pid] ?? null; $bn = $bundleBy[$pid] ?? []; ?>
         <div class="offer">
           <?php $logo = tmdb_img($o['logo_path'], 'w92'); ?>
           <?php if ($logo !== null): ?><img src="<?= h($logo) ?>" alt="<?= h($o['name']) ?>"><?php endif; ?>
           <div>
             <div class="o-name"><a href="/platform/<?= h(rawurlencode($o['slug'])) ?>"><?= h($o['name']) ?></a></div>
             <div class="o-type"><?= h(offer_label($o['offer_type'])) ?></div>
+            <?php if ($pm !== null || $bn !== []): ?>
+            <div class="o-plan">
+              <?php if ($pm !== null): ?>
+                <span class="op-price"><?= OTT_LANG === 'hi' ? '₹' . (int) $pm['price_inr'] . ' से' : 'From ₹' . (int) $pm['price_inr'] ?></span><?php if ((int) $pm['tv_allowed'] === 0): ?><span class="op-tv"><?= OTT_LANG === 'hi' ? 'सबसे सस्ता plan TV पर नहीं' : 'cheapest plan not on TV' ?></span><?php endif; ?>
+              <?php endif; ?>
+              <?php foreach ($bn as $b): ?>
+                <span class="op-bundle"><?= h($b['operator']) ?> ₹<?= (int) $b['plan_price'] ?><?= OTT_LANG === 'hi' ? ' में' : '' ?></span>
+              <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
           </div>
           <div class="o-since"><?= h(tf('%s से यहाँ है', hindi_month($o['first_seen']))) ?></div>
           <?php $wl = watch_url($o, $title); ?>

@@ -311,10 +311,92 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['do'])) {
         exit;
     }
 
+    // ---- मैन्युअल डेटा: OTT plan tier + telecom बंडल (§1 का असली भेद) ----
+    if (str_starts_with($do, 'plan_') || str_starts_with($do, 'bundle_')) {
+        admin_ensure_manual_tables($PDO);
+        // बदलाव तुरंत दिखे — page-cache साफ़ कर दो (write अभी नीचे होगा, अगली
+        // public request ताज़ा बना लेगी; इसलिए यहीं clear करना सुरक्षित)।
+        if (function_exists('cache_clear_all')) {
+            cache_clear_all();
+        }
+    }
+    if ($do === 'plan_add') {
+        $pid = (int) ($_POST['provider_id'] ?? 0);
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $price = max(0, (int) ($_POST['price_inr'] ?? 0));
+        if ($pid > 0 && $name !== '') {
+            q($PDO, "INSERT INTO provider_plans
+                     (provider_id,name,price_inr,period,max_quality,screens,tv_allowed,has_ads,devices,sort_order)
+                     VALUES (?,?,?,?,?,?,?,?,?,?)", [
+                $pid, $name, $price,
+                in_array($_POST['period'] ?? 'month', ['month', 'quarter', 'year'], true) ? $_POST['period'] : 'month',
+                nz(trim((string) ($_POST['max_quality'] ?? ''))),
+                ($sc = (int) ($_POST['screens'] ?? 0)) > 0 ? $sc : null,
+                isset($_POST['tv_allowed']) ? 1 : 0,
+                isset($_POST['has_ads']) ? 1 : 0,
+                nz(trim((string) ($_POST['devices'] ?? ''))),
+                (int) ($_POST['sort_order'] ?? 0),
+            ]);
+        }
+        header('Location: ' . $selfPath . '?view=manual&ok=plan');
+        exit;
+    }
+    if ($do === 'plan_del' && $id > 0) {
+        q($PDO, 'DELETE FROM provider_plans WHERE id = ?', [$id]);
+        header('Location: ' . $selfPath . '?view=manual&ok=pdel');
+        exit;
+    }
+    if ($do === 'bundle_add') {
+        $pid = (int) ($_POST['provider_id'] ?? 0);
+        $op  = trim((string) ($_POST['operator'] ?? ''));
+        $price = max(0, (int) ($_POST['plan_price'] ?? 0));
+        if ($pid > 0 && $op !== '') {
+            q($PDO, "INSERT INTO telecom_bundles
+                     (operator,plan_price,plan_label,provider_id,ott_tier,validity_days)
+                     VALUES (?,?,?,?,?,?)", [
+                $op, $price,
+                nz(trim((string) ($_POST['plan_label'] ?? ''))),
+                $pid,
+                nz(trim((string) ($_POST['ott_tier'] ?? ''))),
+                ($vd = (int) ($_POST['validity_days'] ?? 0)) > 0 ? $vd : null,
+            ]);
+        }
+        header('Location: ' . $selfPath . '?view=manual&ok=bundle');
+        exit;
+    }
+    if ($do === 'bundle_del' && $id > 0) {
+        q($PDO, 'DELETE FROM telecom_bundles WHERE id = ?', [$id]);
+        header('Location: ' . $selfPath . '?view=manual&ok=bdel');
+        exit;
+    }
+
     header('Location: ' . $selfPath);
     exit;
 }
 $flash = (string) ($_GET['ok'] ?? '');
+
+/**
+ * मैन्युअल-डेटा tables पक्का बनाएँ — admin पहली बार खुले (sync से पहले) तब भी चले।
+ * schema.sql की CREATE TABLE IF NOT EXISTS ही चलाते हैं (idempotent, सुरक्षित)।
+ */
+function admin_ensure_manual_tables(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $sql = (string) @file_get_contents(OTT_ROOT . '/schema.sql');
+        if (preg_match_all('/CREATE TABLE IF NOT EXISTS (provider_plans|telecom_bundles).*?;/s', $sql, $m)) {
+            foreach ($m[0] as $stmt) {
+                $pdo->exec($stmt);
+            }
+        }
+    } catch (Throwable $e) {
+        // न बन पाएँ तो view/डेटा चुपचाप छूट जाएगा — बाक़ी admin ज्यों का त्यों
+    }
+}
 
 // ============================================================================
 //  Title inspector — /admin?view=title&id=N  (एक फिल्म की पूरी कुंडली + क्रियाएँ)
@@ -408,6 +490,26 @@ if (($_GET['view'] ?? '') === 'pages') {
     $live = admin_live_check($check);
 
     require OTT_ROOT . '/site/pages/admin_pages.php';
+    exit;
+}
+
+// ============================================================================
+//  मैन्युअल डेटा — /admin?view=manual  (OTT plan tier + telecom बंडल)
+//  यही JustWatch से असली फ़र्क़ (§1) — कोई API नहीं देता, हाथ से भरना है।
+// ============================================================================
+if (($_GET['view'] ?? '') === 'manual') {
+    admin_ensure_manual_tables($PDO);
+    $mProvs  = all($PDO, 'SELECT id, name FROM providers WHERE is_active = 1 ORDER BY display_priority, name');
+    $mPlans  = $mBundles = [];
+    try {
+        $mPlans = all($PDO, "SELECT pp.*, p.name AS pname FROM provider_plans pp
+                              JOIN providers p ON p.id = pp.provider_id
+                             ORDER BY p.display_priority, p.name, pp.sort_order, pp.price_inr");
+        $mBundles = all($PDO, "SELECT tb.*, p.name AS pname FROM telecom_bundles tb
+                                JOIN providers p ON p.id = tb.provider_id
+                               ORDER BY tb.operator, tb.plan_price, p.name");
+    } catch (Throwable $e) { /* tables न बनें तो ख़ाली */ }
+    require OTT_ROOT . '/site/pages/admin_manual.php';
     exit;
 }
 
@@ -544,6 +646,7 @@ $runcell = function (?array $r) use ($e): string {
   <span class="tag">Admin</span>
   <span class="hpill <?= $health[0] ?>"><span class="d"></span><?= $e($health[1]) ?></span>
   <span class="when"><?= $e($now) ?></span>
+  <a class="alogout" href="?view=manual"><?= OTT_LANG === 'hi' ? 'plan + बंडल' : 'Plans + bundles' ?></a>
   <a class="alogout" href="?view=pages"><?= OTT_LANG === 'hi' ? 'पेज + index' : 'Pages' ?></a>
   <a class="alogout" href="?logout=1"><?= OTT_LANG === 'hi' ? 'लॉगआउट ↩' : 'Log out ↩' ?></a>
 </div></div>

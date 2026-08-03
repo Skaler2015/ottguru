@@ -124,6 +124,20 @@ $chg7 = one($PDO, "
           AND changed_on >= (CURDATE() - INTERVAL 7 DAY)) AS removed",
     [(int) $prov['id'], $country, (int) $prov['id'], $country]) ?? ['added' => 0, 'removed' => 0];
 
+// ---- मैन्युअल डेटा: इस OTT के plan tier + इसे बंडल करने वाले telecom (§1) -------
+// try/catch — tables अभी न हों तो पन्ना ज्यों का त्यों। खाली हों तो section नहीं दिखता।
+$plans = $bundles = [];
+try {
+    $plans = all($PDO, "SELECT name, price_inr, period, max_quality, screens, tv_allowed, has_ads, devices
+                          FROM provider_plans WHERE provider_id = ?
+                         ORDER BY sort_order, price_inr", [(int) $prov['id']]);
+    $bundles = all($PDO, "SELECT operator, plan_price, plan_label, ott_tier, validity_days
+                           FROM telecom_bundles WHERE provider_id = ?
+                          ORDER BY plan_price", [(int) $prov['id']]);
+} catch (Throwable $e) {
+    // provider_plans / telecom_bundles अभी नहीं — कोई बात नहीं
+}
+
 // ---- meta ---------------------------------------------------------------------
 $type_label = $type === 'movie' ? t('फिल्में') : ($type === 'tv' ? t('वेब सीरीज़ (सूची)') : t('फिल्में और वेब सीरीज़'));
 $desc = tf('%s India पर अभी %d %s सब्सक्रिप्शन में उपलब्ध हैं। इस हफ़्ते क्या नया आया और क्या हटा — रोज़ अपडेट, OTT गुरु पर।',
@@ -177,6 +191,63 @@ crumbs($crumbs);
     <?php endforeach; ?>
   </div>
 </div>
+
+<?php if ($plans !== []): ?>
+<section>
+  <div class="head"><div><span class="eyebrow"><?= OTT_LANG === 'hi' ? 'plan की सच्चाई' : 'Plan truth' ?></span>
+    <h2><?= h(tf('%s के plan — भारत', $prov['name'])) ?></h2>
+    <p class="dim"><?= h(t('कौन सा plan किस पर चलेगा — ख़ासकर TV पर। यह जानकारी हमने ख़ुद जुटाई है।')) ?></p></div></div>
+  <div class="ptable-wrap"><table class="ptable">
+    <thead><tr>
+      <th><?= OTT_LANG === 'hi' ? 'plan' : 'Plan' ?></th>
+      <th><?= OTT_LANG === 'hi' ? 'कीमत' : 'Price' ?></th>
+      <th><?= OTT_LANG === 'hi' ? 'क्वालिटी' : 'Quality' ?></th>
+      <th><?= OTT_LANG === 'hi' ? 'स्क्रीन' : 'Screens' ?></th>
+      <th><?= OTT_LANG === 'hi' ? 'TV पर?' : 'On TV?' ?></th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($plans as $pl):
+      $per = $pl['period'] === 'year' ? (OTT_LANG === 'hi' ? '/साल' : '/yr')
+           : ($pl['period'] === 'quarter' ? (OTT_LANG === 'hi' ? '/तिमाही' : '/qtr') : (OTT_LANG === 'hi' ? '/माह' : '/mo')); ?>
+    <tr>
+      <td><b><?= h($pl['name']) ?></b><?php if ((int) $pl['has_ads'] === 1): ?> <span class="pt-ads"><?= OTT_LANG === 'hi' ? 'विज्ञापन' : 'ads' ?></span><?php endif; ?></td>
+      <td class="num">₹<?= (int) $pl['price_inr'] ?><span class="dim"><?= h($per) ?></span></td>
+      <td><?= nz($pl['max_quality'] ?? null) !== null ? h($pl['max_quality']) : '—' ?></td>
+      <td class="num"><?= $pl['screens'] !== null ? (int) $pl['screens'] : '—' ?></td>
+      <td>
+        <?php if ((int) $pl['tv_allowed'] === 1): ?>
+          <span class="pt-yes">✓ <?= OTT_LANG === 'hi' ? 'हाँ' : 'Yes' ?></span>
+        <?php else: ?>
+          <span class="pt-no">✗ <?= OTT_LANG === 'hi' ? 'सिर्फ़ mobile/tablet' : 'Mobile/tablet only' ?></span>
+        <?php endif; ?>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table></div>
+  <p class="dim small" style="margin-top:8px"><?= h(t('कीमतें बदल सकती हैं — देखने से पहले OTT ऐप में पक्का कर लें।')) ?></p>
+</section>
+<?php endif; ?>
+
+<?php if ($bundles !== []): ?>
+<section>
+  <div class="head"><div><span class="eyebrow"><?= OTT_LANG === 'hi' ? 'बंडल' : 'Bundle' ?></span>
+    <h2><?= h(tf('%s इन telecom recharge में मुफ़्त', $prov['name'])) ?></h2>
+    <p class="dim"><?= h(t('हो सकता है यह आपके मौजूदा मोबाइल plan में पहले से शामिल हो — अलग पैसे न दें।')) ?></p></div></div>
+  <div class="bundles">
+    <?php foreach ($bundles as $b): ?>
+    <div class="bundle">
+      <div class="b-op"><?= h($b['operator']) ?></div>
+      <div class="b-main">
+        <div class="b-price">₹<?= (int) $b['plan_price'] ?><?php if ($b['validity_days'] !== null): ?> <span class="dim"><?= (int) $b['validity_days'] ?> <?= OTT_LANG === 'hi' ? 'दिन' : 'days' ?></span><?php endif; ?></div>
+        <?php if (nz($b['plan_label'] ?? null) !== null): ?><div class="b-label"><?= h($b['plan_label']) ?></div><?php endif; ?>
+        <div class="b-inc"><?= OTT_LANG === 'hi' ? 'शामिल:' : 'Includes:' ?> <b><?= h($prov['name']) ?><?php if (nz($b['ott_tier'] ?? null) !== null): ?> <?= h($b['ott_tier']) ?><?php endif; ?></b></div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
 
 <?php if ($naya !== []): ?>
 <section>

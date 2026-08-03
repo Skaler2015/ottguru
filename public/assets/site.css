@@ -307,6 +307,13 @@ section, .sec{margin-top:44px}
 .offer .o-type{color:var(--ink2);font-size:13.5px}
 .offer .o-since{margin-left:auto;color:var(--ink2);font-size:13px;text-align:right;font-family:var(--mono)}
 .offer .o-link{white-space:nowrap;color:var(--blue);font-weight:600}
+/* plan/बंडल संकेत — हर OTT के नीचे (§1 का असली भेद) */
+.o-plan{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:5px}
+.op-price{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--ink);
+  background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:6px;padding:1px 8px}
+.op-tv{font-size:11px;color:var(--pink);font-weight:600}
+.op-bundle{font-size:11.5px;font-weight:600;color:var(--good);
+  background:rgba(0,210,106,.1);border:1px solid rgba(0,210,106,.28);border-radius:999px;padding:1px 9px}
 /* "अभी देखें" — सीधे उस OTT पर वही मूवी खोलता है */
 .watchbtn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;
   background:var(--grad);color:#fff;font-weight:600;font-size:13.5px;font-family:var(--body);
@@ -396,6 +403,31 @@ section, .sec{margin-top:44px}
 .sp-badge.gone{color:var(--ink3);background:rgba(255,255,255,.06)}
 .sp-when{font-size:13px;color:var(--ink2);margin-top:3px;font-family:var(--mono)}
 .sp-dur{color:var(--ink3)}
+
+/* plan tier तालिका + telecom बंडल — मैन्युअल डेटा, §1 का असली भेद (Feature: manual) */
+.ptable-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);margin-top:4px}
+.ptable{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+.ptable th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink3);padding:11px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+.ptable td{padding:12px 16px;border-bottom:1px solid var(--line);color:var(--ink)}
+.ptable tbody tr:last-child td{border-bottom:0}
+.ptable tbody tr:hover{background:rgba(79,140,255,.05)}
+.ptable .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ptable .num .dim{font-size:12px}
+.pt-yes{color:var(--good);font-weight:600;white-space:nowrap}
+.pt-no{color:var(--pink);font-weight:600;white-space:nowrap;font-size:13px}
+.pt-ads{font-size:10.5px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;
+  color:var(--ink3);border:1px solid var(--line2);border-radius:5px;padding:0 5px;vertical-align:middle}
+.bundles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.bundle{display:flex;gap:13px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;background:linear-gradient(180deg,rgba(0,210,106,.06),rgba(8,11,18,.2))}
+.bundle .b-op{flex:0 0 auto;font-family:var(--disp);font-weight:700;font-size:15px;color:var(--ink);
+  background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 11px}
+.bundle .b-price{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink)}
+.bundle .b-price .dim{font-size:12px}
+.bundle .b-label{font-size:12px;color:var(--ink2);margin-top:1px}
+.bundle .b-inc{font-size:13px;color:var(--ink2);margin-top:5px}
+.bundle .b-inc b{color:var(--good)}
 
 .tlwrap{border:1px solid var(--line);border-radius:var(--r);margin-top:12px;padding:28px 26px;
   background:linear-gradient(180deg,rgba(22,29,41,.6),rgba(8,11,18,.25))}
@@ -509,8 +541,16 @@ a.castcard:hover .nm{color:var(--blue)}
   font-size:13px;font-weight:600;font-family:var(--body);cursor:pointer;transition:.14s;white-space:nowrap}
 .abtn:hover{border-color:var(--blue);color:#fff}
 .abtn:disabled{opacity:.4;cursor:default}
+.abtn.danger:hover{border-color:var(--pink);color:var(--pink)}
 .asel{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--ink);
   font-size:13px;font-family:var(--body);outline:0;max-width:200px}
+/* admin मैन्युअल-डेटा फ़ॉर्म — plan + बंडल जोड़ने के इनपुट */
+.ainp{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--ink);
+  font-size:13px;font-family:var(--body);outline:0;max-width:200px;min-width:80px}
+.ainp:focus,.asel:focus{border-color:var(--blue)}
+.achk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);white-space:nowrap}
+.mform{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:14px;
+  padding-top:14px;border-top:1px solid var(--line)}
 .okline{background:rgba(0,210,106,.1);border:1px solid rgba(0,210,106,.3);color:#5ff0a6;border-radius:10px;
   padding:9px 13px;font-size:13.5px;margin-bottom:12px}
 .hpill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;font-weight:600;
