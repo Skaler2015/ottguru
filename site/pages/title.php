@@ -474,10 +474,75 @@ if ($now_names !== []) {
              'html' => tf('अभी %s पर', '<b>' . h(implode(', ', $now_names)) . '</b>'),
              'tag'  => t('लाइव')];
 }
+
+// ---- सफ़र का सार + platform-वार अवधि (Feature 9 — §1 की जान) -------------------
+// $spells: is_current DESC, first_seen ASC पहले से sorted। सब्सक्रिप्शन (देखने लायक़)
+// को rent/buy से अलग रखते हैं — सार सिर्फ़ "कहाँ देखी जा सकती है" पर बने।
+$subOffers  = ['flatrate', 'ads', 'free'];
+$curSub     = array_values(array_filter($spells, fn ($s) => (int) $s['is_current'] === 1 && in_array($s['offer_type'], $subOffers, true)));
+$pastSpells = array_values(array_filter($spells, fn ($s) => (int) $s['is_current'] === 0));
+$curSubNm   = array_values(array_unique(array_map(fn ($s) => $s['name'], $curSub)));
+$pastNm     = array_values(array_unique(array_map(fn ($s) => $s['name'], $pastSpells)));
+$platSeen   = count(array_unique(array_map(fn ($s) => $s['name'], $spells)));
+$firstTrack = null;
+foreach ($spells as $s) {
+    if ($firstTrack === null || $s['first_seen'] < $firstTrack) {
+        $firstTrack = $s['first_seen'];
+    }
+}
+$hasMoved = $pastNm !== [];   // कभी platform बदला? तभी "सफ़र" कहने लायक़
 ?>
 <?php if ($tl !== []): ?>
 <h2><?= h(t('उपलब्धता का इतिहास')) ?></h2>
 <p class="dim small"><?= h(t('यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।')) ?></p>
+
+<?php if ($spells !== []): ?>
+<div class="ahist">
+  <?php /* सफ़र की एक-पंक्ति कहानी — सिर्फ़ असली डेटा से */ ?>
+  <p class="ahist-lead">
+    <?php if ($curSubNm !== [] && $hasMoved): ?>
+      <?= OTT_LANG === 'hi'
+          ? 'पहले <b>' . h(implode(', ', $pastNm)) . '</b> पर थी — अब <b>' . h(implode(', ', $curSubNm)) . '</b> पर।'
+          : 'Previously on <b>' . h(implode(', ', $pastNm)) . '</b> — now on <b>' . h(implode(', ', $curSubNm)) . '</b>.' ?>
+    <?php elseif ($curSubNm !== []): ?>
+      <?= OTT_LANG === 'hi'
+          ? 'अभी <b>' . h(implode(', ', $curSubNm)) . '</b> के सब्सक्रिप्शन में उपलब्ध।'
+          : 'Currently streaming on <b>' . h(implode(', ', $curSubNm)) . '</b>.' ?>
+    <?php elseif ($pastNm !== []): ?>
+      <?= OTT_LANG === 'hi'
+          ? 'अभी किसी OTT सब्सक्रिप्शन में नहीं — पहले <b>' . h(implode(', ', $pastNm)) . '</b> पर थी।'
+          : 'Not on any OTT subscription right now — it was on <b>' . h(implode(', ', $pastNm)) . '</b>.' ?>
+    <?php endif; ?>
+  </p>
+  <div class="ahist-stats">
+    <span><b><?= (int) $platSeen ?></b> <?= OTT_LANG === 'hi' ? 'platforms देखे' : ($platSeen === 1 ? 'platform seen' : 'platforms seen') ?></span>
+    <?php if ($firstTrack !== null): ?><span><?= OTT_LANG === 'hi' ? 'नज़र' : 'tracked since' ?> <b><?= h(hindi_month($firstTrack)) ?></b></span><?php endif; ?>
+    <?php if ($events !== []): ?><span><b><?= count($events) ?></b> <?= OTT_LANG === 'hi' ? 'बदलाव दर्ज' : (count($events) === 1 ? 'change logged' : 'changes logged') ?></span><?php endif; ?>
+  </div>
+
+  <?php /* platform-वार spell — कब से कब तक, कितने समय (यही किसी और के पास नहीं) */ ?>
+  <div class="spells">
+    <?php foreach ($spells as $s): $cur = (int) $s['is_current'] === 1;
+      $dur = $cur ? human_duration($s['first_seen']) : human_duration($s['first_seen'], $s['last_seen']); ?>
+    <div class="spell <?= $cur ? 'cur' : 'past' ?>">
+      <span class="sp-dot" aria-hidden="true"></span>
+      <div class="sp-main">
+        <div class="sp-top">
+          <a class="sp-name" href="/platform/<?= h(rawurlencode($s['pslug'])) ?>"><?= h($s['name']) ?></a>
+          <span class="sp-offer"><?= h(offer_label($s['offer_type'])) ?></span>
+          <?php if ($cur): ?><span class="sp-badge live"><?= h(t('लाइव')) ?></span><?php else: ?><span class="sp-badge gone"><?= OTT_LANG === 'hi' ? 'हट गई' : 'removed' ?></span><?php endif; ?>
+        </div>
+        <div class="sp-when">
+          <?= h(hindi_month($s['first_seen'])) ?> – <?= $cur ? h(OTT_LANG === 'hi' ? 'अब' : 'now') : h(hindi_month($s['last_seen'])) ?>
+          <?php if ($dur !== ''): ?><span class="sp-dur">· <?= h($dur) ?></span><?php endif; ?>
+        </div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
 <div class="tlwrap" data-reveal>
   <div class="timeline">
     <div class="tline"><i></i></div>

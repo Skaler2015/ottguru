@@ -371,6 +371,32 @@ section, .sec{margin-top:44px}
 .share .ic{width:16px;height:16px;border-radius:5px;display:inline-block}
 
 /* animated availability timeline — हमारी USP का हीरो visual */
+/* उपलब्धता का सफ़र — सार + platform-वार अवधि (Feature 9, §1 की जान) */
+.ahist{border:1px solid var(--line);border-radius:var(--r);margin-top:12px;padding:20px 22px;
+  background:linear-gradient(180deg,rgba(79,140,255,.07),rgba(8,11,18,.25))}
+.ahist-lead{font-size:17px;line-height:1.5;margin:0 0 12px;color:var(--ink)}
+.ahist-lead b{color:var(--blue);font-weight:600}
+.ahist-stats{display:flex;flex-wrap:wrap;gap:8px 18px;padding-bottom:14px;margin-bottom:6px;
+  border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.ahist-stats b{color:var(--ink);font-family:var(--mono);font-weight:600}
+.spells{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.spell{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-radius:12px;
+  background:var(--card);border:1px solid var(--line)}
+.spell.cur{border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.06)}
+.spell .sp-dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--ink3)}
+.spell.cur .sp-dot{background:var(--good);box-shadow:0 0 0 4px rgba(46,204,113,.16)}
+.sp-main{min-width:0;flex:1}
+.sp-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.sp-name{font-weight:600;color:var(--ink)}
+.sp-name:hover{color:var(--blue)}
+.sp-offer{font-size:12px;color:var(--ink2)}
+.sp-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  padding:1px 8px;border-radius:999px;font-family:var(--mono)}
+.sp-badge.live{color:var(--good);background:rgba(46,204,113,.14)}
+.sp-badge.gone{color:var(--ink3);background:rgba(255,255,255,.06)}
+.sp-when{font-size:13px;color:var(--ink2);margin-top:3px;font-family:var(--mono)}
+.sp-dur{color:var(--ink3)}
+
 .tlwrap{border:1px solid var(--line);border-radius:var(--r);margin-top:12px;padding:28px 26px;
   background:linear-gradient(180deg,rgba(22,29,41,.6),rgba(8,11,18,.25))}
 .timeline{position:relative;padding-left:6px}
