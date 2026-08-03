@@ -111,6 +111,41 @@ $writers   = array_values(array_filter($crew,
 $trailer   = $videos[0] ?? null;
 $cert      = nz((string) ($meta['certification'] ?? ''));
 
+// ---- सिफ़ारिशें: मिलती-जुलती (शेयर्ड genres) + इसी director की ------------------
+// सिर्फ़ वे जो अभी OTT पर हैं (देखने लायक़ + thin नहीं)। tables/डेटा न हों तो खाली।
+$AVX = "EXISTS (SELECT 1 FROM availability a WHERE a.title_id = t.id AND a.is_current = 1
+        AND a.country = ? AND a.offer_type IN ('flatrate','ads','free'))";
+$similar = $byDirector = [];
+try {
+    if ($genres !== []) {
+        $similar = all($PDO, "
+            SELECT t.slug, t.title, t.release_year, t.poster_path, t.media_type, t.vote_average,
+                   t.popularity, COUNT(*) AS shared
+              FROM title_genres tg
+              JOIN title_genres tg2 ON tg2.genre_id = tg.genre_id AND tg2.title_id <> tg.title_id
+              JOIN titles t ON t.id = tg2.title_id
+             WHERE tg.title_id = ? AND t.media_type = ? AND $AVX
+             GROUP BY t.id
+             ORDER BY shared DESC, t.popularity DESC
+             LIMIT 12", [$tid_i, $title['media_type'], $country]);
+    }
+    $dirIds = array_values(array_unique(array_map(fn ($c) => (int) $c['id'], $directors)));
+    if ($dirIds !== []) {
+        $in = implode(',', array_fill(0, count($dirIds), '?'));
+        $byDirector = all($PDO, "
+            SELECT DISTINCT t.slug, t.title, t.release_year, t.poster_path, t.media_type,
+                   t.vote_average, t.popularity
+              FROM title_credits tc
+              JOIN titles t ON t.id = tc.title_id
+             WHERE tc.person_id IN ($in) AND tc.credit_kind = 'crew'
+               AND tc.role IN ('Director','Creator') AND t.id <> ? AND $AVX
+             ORDER BY t.popularity DESC
+             LIMIT 12", array_merge($dirIds, [$tid_i, $country]));
+    }
+} catch (Throwable $e) {
+    // नई tables अभी नहीं — सिफ़ारिशें छोड़ दो
+}
+
 // ---- meta / schema.org -------------------------------------------------------
 $is_tv    = $title['media_type'] === 'tv';
 $year     = nz((string) ($title['release_year'] ?? '')) ;
@@ -381,6 +416,36 @@ page_header([
   </a>
   <?php endforeach; ?>
 </div>
+<?php endif; ?>
+
+<?php
+// सिफ़ारिश rail — poster cards (homepage जैसा)
+$rec_rail = function (array $items): void {
+    echo '<div class="rail">';
+    foreach ($items as $t) {
+        $img = tmdb_img($t['poster_path'] ?? null, 'w342');
+        echo '<a class="pcard" href="' . h(title_url($t)) . '">';
+        echo $img !== null
+            ? '<img loading="lazy" src="' . h($img) . '" alt="' . h(tf('%s का poster', $t['title'])) . '">'
+            : '<span class="noposter">' . h(mb_substr($t['title'], 0, 40, 'UTF-8')) . '</span>';
+        if ((float) $t['vote_average'] > 0) {
+            echo '<span class="rate">★ <b>' . number_format((float) $t['vote_average'], 1) . '</b></span>';
+        }
+        echo '<span class="ov"><span class="t">' . h($t['title']) . '</span>'
+           . '<span class="m">' . h((string) ($t['release_year'] ?? '')) . ' · ' . h(media_label($t['media_type'])) . '</span></span></a>';
+    }
+    echo '</div>';
+};
+?>
+
+<?php if ($byDirector !== []): ?>
+<h2><?= h(OTT_LANG === 'hi' ? ($is_tv ? 'इसी क्रिएटर की और' : 'इसी निर्देशक की और') : ($is_tv ? 'More from this creator' : 'More from this director')) ?></h2>
+<?php $rec_rail($byDirector); ?>
+<?php endif; ?>
+
+<?php if ($similar !== []): ?>
+<h2 style="margin-top:36px"><?= h(OTT_LANG === 'hi' ? 'मिलती-जुलती — अभी OTT पर' : 'More like this — on OTT now') ?></h2>
+<?php $rec_rail($similar); ?>
 <?php endif; ?>
 
 <?php
