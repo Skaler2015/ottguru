@@ -77,6 +77,12 @@ function provider_url(array $p): string
     return '/platform/' . rawurlencode($p['slug']);
 }
 
+/** व्यक्ति (कलाकार/निर्देशक) के पन्ने का रास्ता — id authoritative, slug SEO के लिए */
+function person_url(array $p): string
+{
+    return '/person/' . (int) $p['id'] . '/' . rawurlencode(slugify((string) $p['name']));
+}
+
 /**
  * "अभी देखें" बटन का असली destination।
  *   1. सबसे पहले sync से मिला deep link (सीधे उस OTT पर वही मूवी)

@@ -80,6 +80,15 @@ if (count($seg) === 2 && $seg[0] === 'genre' && $slug_ok($seg[1])) {
     exit;
 }
 
+// person hub पेज — /person/{id}[/{slug}]  (कलाकार/निर्देशक; id पक्का, slug SEO)
+if (($seg[0] === 'person') && isset($seg[1]) && ctype_digit($seg[1])
+    && (count($seg) === 2 || count($seg) === 3)) {
+    $want_pid   = (int) $seg[1];
+    $want_pslug = $seg[2] ?? null;
+    require OTT_ROOT . '/site/pages/person.php';
+    exit;
+}
+
 // भाषा पेज — /platform/netflix/hindi-movies या .../hindi-series
 if (count($seg) === 3 && $seg[0] === 'platform' && $slug_ok($seg[1])
     && preg_match('/^([a-z]+)-(movies|series)$/', $seg[2], $m) === 1
