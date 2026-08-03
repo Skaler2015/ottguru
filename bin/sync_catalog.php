@@ -243,4 +243,11 @@ $totalTitles = (int) scalar($PDO, 'SELECT COUNT(*) FROM titles');
 logline("DB में कुल titles: $totalTitles  ·  इस दौड़ में नए: $new  ·  " . fmt_secs(ms_now() - $t0));
 
 run_finish($PDO, $runId, $status, ['titles' => $seen], $note);
+
+// नए titles जुड़े → cache बासी (homepage/browse बदल सकते हैं), साफ़ कर दो।
+if ($new > 0 && function_exists('cache_clear_all')) {
+    $cleared = cache_clear_all();
+    logline("page-cache साफ़: {$cleared} फ़ाइलें हटीं");
+}
+
 lock_release($lock);
