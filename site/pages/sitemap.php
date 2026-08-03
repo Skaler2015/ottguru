@@ -14,7 +14,7 @@ $base    = 'https://ottguru.in';
 
 header('Content-Type: application/xml; charset=utf-8');
 
-$urls = [];   // हर entry: [loc, lastmod|null]
+$urls = [];   // हर entry: [loc, lastmod|null, image|null]
 
 // ---- होमपेज + changes पेज ------------------------------------------------------
 $aaj = date('Y-m-d');
@@ -101,8 +101,9 @@ try {
 }
 
 // ---- query 9: title पेज — सिर्फ़ वे जिन पर अभी कुछ उपलब्ध है --------------------
+// poster भी लेते हैं → image sitemap (Google Images ट्रैफ़िक; poster TMDB CDN से)।
 $titles = all($PDO, "
-    SELECT t.slug, t.media_type,
+    SELECT t.slug, t.media_type, t.title, t.poster_path,
            GREATEST(t.updated_at, COALESCE(MAX(a.last_seen), t.updated_at)) AS lastmod
       FROM titles t
       JOIN availability a ON a.title_id = t.id AND a.is_current = 1
@@ -111,16 +112,23 @@ $titles = all($PDO, "
      ORDER BY t.popularity DESC",
     [$country]);
 foreach ($titles as $t) {
-    $urls[] = [$base . title_url($t), substr((string) $t['lastmod'], 0, 10)];
+    $urls[] = [$base . title_url($t), substr((string) $t['lastmod'], 0, 10), tmdb_img($t['poster_path'], 'w500')];
 }
 
 // ---- XML ------------------------------------------------------------------------
+// image namespace → हर title URL के साथ उसका poster (जहाँ है)। Google Images इसे पढ़ता है।
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-foreach ($urls as [$loc, $lastmod]) {
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+echo '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+foreach ($urls as $u) {
+    [$loc, $lastmod] = $u;
+    $img = $u[2] ?? null;
     echo "  <url><loc>" . h($loc) . "</loc>";
     if (nz((string) $lastmod) !== null) {
         echo "<lastmod>" . h(substr((string) $lastmod, 0, 10)) . "</lastmod>";
+    }
+    if ($img !== null) {
+        echo "<image:image><image:loc>" . h($img) . "</image:loc></image:image>";
     }
     echo "</url>\n";
 }

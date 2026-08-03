@@ -239,14 +239,15 @@ if ($langs !== []) {
 }
 
 // ---- schema @graph: Movie/TVSeries + Breadcrumb + FAQ + Organization ----
-$graph = [$node];
-$graph[] = [
-    '@type' => 'BreadcrumbList',
-    'itemListElement' => [
-        ['@type' => 'ListItem', 'position' => 1, 'name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'item' => 'https://ottguru.in/'],
-        ['@type' => 'ListItem', 'position' => 2, 'name' => $title['title'], 'item' => 'https://ottguru.in' . title_url($title)],
-    ],
+// breadcrumb: होम → श्रेणी (फिल्म/सीरीज़, browse पर) → यह title। visible और schema
+// एक ही $tcrumbs से बनते हैं ताकि हमेशा मेल खाएँ (Google यही चाहता है)।
+$tcrumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => media_label($title['media_type']), 'url' => '/browse?type=' . ($is_tv ? 'tv' : 'movie')],
+    ['name' => $title['title'], 'url' => title_url($title)],
 ];
+$graph = [$node];
+$graph[] = breadcrumb_schema($tcrumbs);
 if ($faqs !== []) {
     $graph[] = [
         '@type' => 'FAQPage',
@@ -263,8 +264,11 @@ page_header([
     'description' => $desc,
     'canonical'   => title_url($title),
     'image'       => tmdb_img($title['poster_path'], 'w500'),
+    'image_alt'   => tf('%s का poster', $title['title']),
+    'og_type'     => $is_tv ? 'video.tv_show' : 'video.movie',
     'jsonld'      => ['@context' => 'https://schema.org', '@graph' => $graph],
 ]);
+crumbs($tcrumbs);
 ?>
 <?php $bd = tmdb_img($title['backdrop_path'] ?? null, 'w1280'); ?>
 <?php if ($bd !== null): ?><div class="t-backdrop" style="background-image:url('<?= h($bd) ?>')"></div><?php endif; ?>

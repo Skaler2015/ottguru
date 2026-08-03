@@ -70,11 +70,18 @@ $base_url = '/genre/' . rawurlencode($genre['slug']);
 $desc = tf('%s की %d फिल्में और वेब सीरीज़ जो अभी भारत में OTT पर उपलब्ध हैं — Netflix, Prime, ZEE5, JioHotstar आदि। कहाँ देखें और कब से है — रोज़ अपडेट, OTT गुरु पर।',
     $gname, $total);
 
+$crumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => OTT_LANG === 'hi' ? 'ब्राउज़' : 'Browse', 'url' => '/browse'],
+    ['name' => $gname, 'url' => $base_url],
+];
+
 page_header([
     'title'       => tf('%s फिल्में और सीरीज़ — अभी OTT पर (%d)', $gname, $total),
     'description' => $desc,
     'canonical'   => $base_url,
     'noindex'     => $page > 1 || $total < 3,   // paginated/thin पन्ने index न हों
+    'breadcrumb'  => $crumbs,
     'jsonld'      => [
         '@context' => 'https://schema.org',
         '@type'    => 'CollectionPage',
@@ -83,6 +90,7 @@ page_header([
         'about'    => ['@type' => 'Thing', 'name' => $gname],
     ],
 ]);
+crumbs($crumbs);
 ?>
 
 <div class="phead">

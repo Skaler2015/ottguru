@@ -67,12 +67,18 @@ $canon   = person_url($person);
 
 $desc = tf('%s की वे फिल्में और वेब सीरीज़ जो अभी भारत में OTT पर उपलब्ध हैं — कहाँ देखें, किस platform पर। रोज़ अपडेट, OTT गुरु पर।', $pname);
 
+$crumbs = [
+    ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
+    ['name' => $pname, 'url' => $canon],
+];
+
 page_header([
     'title'       => tf('%s — फिल्में और सीरीज़ जो अभी OTT पर हैं', $pname),
     'description' => $desc,
     'canonical'   => $canon,
     'image'       => $photo,
     'noindex'     => $total < 2,   // बहुत पतला हो तो index नहीं
+    'breadcrumb'  => $crumbs,
     'jsonld'      => array_filter([
         '@context' => 'https://schema.org',
         '@type'    => 'Person',
@@ -82,6 +88,7 @@ page_header([
         'jobTitle' => $roleStr !== '' ? $roleStr : null,
     ]),
 ]);
+crumbs($crumbs);
 ?>
 
 <div class="phead">
