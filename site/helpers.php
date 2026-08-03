@@ -61,6 +61,34 @@ function offer_label(string $t): string
     };
 }
 
+/**
+ * दो तारीख़ों के बीच का मानवीय अंतराल — "2 साल 3 माह" / "5 माह" / "12 दिन"।
+ * $to न हो तो आज तक। उपलब्धता की अवधि दिखाने के लिए (Feature 9, §1 की जान)।
+ * UI की भाषा के हिसाब; न बन पाए तो ख़ाली।
+ */
+function human_duration(string $from, ?string $to = null): string
+{
+    $a = strtotime($from);
+    $b = $to !== null ? strtotime($to) : time();
+    if ($a === false || $b === false || $b < $a) {
+        return '';
+    }
+    $iv = (new DateTimeImmutable('@' . $a))->diff(new DateTimeImmutable('@' . $b));
+    $hi = OTT_LANG === 'hi';
+    $parts = [];
+    if ($iv->y > 0) {
+        $parts[] = $iv->y . ' ' . ($hi ? 'साल' : ($iv->y === 1 ? 'yr' : 'yrs'));
+    }
+    if ($iv->m > 0) {
+        $parts[] = $iv->m . ' ' . ($hi ? 'माह' : ($iv->m === 1 ? 'mo' : 'mos'));
+    }
+    if ($parts === []) {
+        $dd = max(1, (int) $iv->days);
+        return $dd . ' ' . ($hi ? 'दिन' : ($dd === 1 ? 'day' : 'days'));
+    }
+    return implode(' ', $parts);
+}
+
 function media_label(string $t): string
 {
     return $t === 'tv' ? t('वेब सीरीज़') : t('फिल्म');
