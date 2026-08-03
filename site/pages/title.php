@@ -74,11 +74,11 @@ try {
     $genres = all($PDO, "SELECT g.name_en, g.slug FROM title_genres tg
                           JOIN genres g ON g.id = tg.genre_id
                          WHERE tg.title_id = ? ORDER BY g.name_en", [$tid_i]);
-    $cast   = all($PDO, "SELECT p.name, p.profile_path, tc.role FROM title_credits tc
+    $cast   = all($PDO, "SELECT p.id, p.name, p.profile_path, tc.role FROM title_credits tc
                           JOIN people p ON p.id = tc.person_id
                          WHERE tc.title_id = ? AND tc.credit_kind = 'cast'
                          ORDER BY tc.ord", [$tid_i]);
-    $crew   = all($PDO, "SELECT p.name, tc.role FROM title_credits tc
+    $crew   = all($PDO, "SELECT p.id, p.name, tc.role FROM title_credits tc
                           JOIN people p ON p.id = tc.person_id
                          WHERE tc.title_id = ? AND tc.credit_kind = 'crew'
                          ORDER BY tc.ord", [$tid_i]);
@@ -373,12 +373,12 @@ page_header([
 <h2><?= h(t('कलाकार')) ?></h2>
 <div class="castrow">
   <?php foreach ($cast as $c): ?>
-  <div class="castcard">
+  <a class="castcard" href="<?= h(person_url($c)) ?>">
     <?php $pf = tmdb_img($c['profile_path'] ?? null, 'w185'); ?>
     <div class="ph"><?php if ($pf !== null): ?><img src="<?= h($pf) ?>" alt="<?= h($c['name']) ?>" loading="lazy"><?php else: ?><span class="noimg"><?= h(mb_substr($c['name'], 0, 1)) ?></span><?php endif; ?></div>
     <div class="nm"><?= h($c['name']) ?></div>
     <?php if (nz($c['role'] ?? null) !== null): ?><div class="rl"><?= h($c['role']) ?></div><?php endif; ?>
-  </div>
+  </a>
   <?php endforeach; ?>
 </div>
 <?php endif; ?>
@@ -431,8 +431,9 @@ if ($now_names !== []) {
 
 <h2><?= h(t('फिल्म के तथ्य')) ?></h2>
 <div class="facts">
-  <?php if ($directors !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? ($is_tv ? 'क्रिएटर' : 'निर्देशक') : ($is_tv ? 'Creator' : 'Director') ?></div><div class="v" style="font-size:14px"><?= h(implode(', ', array_map(fn ($c) => $c['name'], $directors))) ?></div></div><?php endif; ?>
-  <?php if ($writers !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'लेखक' : 'Writer' ?></div><div class="v" style="font-size:14px"><?= h(implode(', ', array_map(fn ($c) => $c['name'], array_slice($writers, 0, 3)))) ?></div></div><?php endif; ?>
+  <?php $plink = fn ($c) => '<a href="' . h(person_url($c)) . '">' . h($c['name']) . '</a>'; ?>
+  <?php if ($directors !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? ($is_tv ? 'क्रिएटर' : 'निर्देशक') : ($is_tv ? 'Creator' : 'Director') ?></div><div class="v" style="font-size:14px"><?= implode(', ', array_map($plink, $directors)) ?></div></div><?php endif; ?>
+  <?php if ($writers !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'लेखक' : 'Writer' ?></div><div class="v" style="font-size:14px"><?= implode(', ', array_map($plink, array_slice($writers, 0, 3))) ?></div></div><?php endif; ?>
   <?php if ($year !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'रिलीज़ वर्ष' : 'Year' ?></div><div class="v"><?= h($year) ?></div></div><?php endif; ?>
   <div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'किस्म' : 'Type' ?></div><div class="v"><?= h(media_label($title['media_type'])) ?></div></div>
   <?php if ($cert !== null): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? 'सेंसर रेटिंग' : 'Certification' ?></div><div class="v"><?= h($cert) ?></div></div><?php endif; ?>

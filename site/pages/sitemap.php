@@ -82,6 +82,23 @@ try {
     // genres table अभी नहीं — कोई बात नहीं
 }
 
+// ---- person पेज — सिर्फ़ ≥3 उपलब्ध titles वाले (चर्चित लोग; thin/बहुत-ज़्यादा से बचाव) --
+try {
+    foreach (all($PDO, "
+        SELECT p.id, p.name, COUNT(DISTINCT t.id) AS n
+          FROM title_credits tc
+          JOIN people p ON p.id = tc.person_id
+          JOIN titles t ON t.id = tc.title_id
+          JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                             AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+         GROUP BY p.id
+        HAVING n >= 3", [$country]) as $p) {
+        $urls[] = [$base . person_url($p), $aaj];
+    }
+} catch (Throwable $e) {
+    // people/title_credits table अभी नहीं
+}
+
 // ---- query 9: title पेज — सिर्फ़ वे जिन पर अभी कुछ उपलब्ध है --------------------
 $titles = all($PDO, "
     SELECT t.slug, t.media_type,
