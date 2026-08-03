@@ -73,6 +73,13 @@ if (count($seg) === 2 && $seg[0] === 'platform' && $slug_ok($seg[1])) {
     exit;
 }
 
+// genre hub पेज — /genre/{slug}  (Content Hub)
+if (count($seg) === 2 && $seg[0] === 'genre' && $slug_ok($seg[1])) {
+    $want_slug = $seg[1];
+    require OTT_ROOT . '/site/pages/genre.php';
+    exit;
+}
+
 // भाषा पेज — /platform/netflix/hindi-movies या .../hindi-series
 if (count($seg) === 3 && $seg[0] === 'platform' && $slug_ok($seg[1])
     && preg_match('/^([a-z]+)-(movies|series)$/', $seg[2], $m) === 1

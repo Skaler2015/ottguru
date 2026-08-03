@@ -257,7 +257,7 @@ page_header([
 
     <?php if ($genres !== []): ?>
     <div class="chips">
-      <?php foreach ($genres as $g): ?><span class="chip"><?= h($g['name_en']) ?></span><?php endforeach; ?>
+      <?php foreach ($genres as $g): ?><a class="chip" href="/genre/<?= h(rawurlencode($g['slug'])) ?>"><?= h($g['name_en']) ?></a><?php endforeach; ?>
     </div>
     <?php endif; ?>
 
