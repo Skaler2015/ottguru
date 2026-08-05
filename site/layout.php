@@ -136,6 +136,7 @@ function page_header(array $opt = []): void
           <div class="mega-col">
             <div class="mega-h">Platforms</div>
             <?php foreach ($mega['platforms'] as $p): ?><a role="menuitem" href="/platform/<?= h(rawurlencode($p['slug'])) ?>"><?= h($p['name']) ?></a><?php endforeach; ?>
+            <a class="mega-all" href="/compare"><?= OTT_LANG === 'hi' ? 'plan तुलना →' : 'Compare plans →' ?></a>
           </div>
           <?php endif; ?>
           <?php if ($mega['langs'] !== []): ?>
@@ -186,7 +187,8 @@ function page_footer(): void
         <a href="/platform/netflix">Netflix</a>
         <a href="/platform/prime-video">Prime Video</a>
         <a href="/platform/jiohotstar">JioHotstar</a>
-        <a href="/platform/zee5">ZEE5</a></div>
+        <a href="/platform/zee5">ZEE5</a>
+        <a href="/compare"><?= h(OTT_LANG === 'hi' ? 'plan तुलना' : 'Compare plans') ?></a></div>
       <div class="fcol"><h4><?= h(t('कंपनी')) ?></h4>
         <a href="/"><?= h(t('हमारे बारे में')) ?></a>
         <a href="/sitemap.xml">Sitemap</a>
