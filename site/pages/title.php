@@ -434,6 +434,24 @@ crumbs($tcrumbs);
   </div>
 </div>
 
+<?php
+// section tabs — scroll-spy sticky nav (सारा content DOM में रहता है, SEO सुरक्षित;
+// no-JS पर भी ये सादे anchor-links हैं जो सही section पर ले जाते हैं)
+$tabs = [];
+if (nz($title['overview'] ?? null) !== null) { $tabs[] = ['s-story', OTT_LANG === 'hi' ? 'कहानी' : 'Story']; }
+if ($cast !== []) { $tabs[] = ['s-cast', OTT_LANG === 'hi' ? 'कलाकार' : 'Cast']; }
+if ($byDirector !== [] || $similar !== []) { $tabs[] = ['s-similar', OTT_LANG === 'hi' ? 'मिलती-जुलती' : 'Similar']; }
+if ($spells !== [] || $events !== []) { $tabs[] = ['s-history', OTT_LANG === 'hi' ? 'इतिहास' : 'History']; }
+$tabs[] = ['s-facts', OTT_LANG === 'hi' ? 'तथ्य' : 'Facts'];
+?>
+<?php if (count($tabs) > 2): ?>
+<nav class="t-tabs" aria-label="<?= h(OTT_LANG === 'hi' ? 'सेक्शन' : 'Sections') ?>">
+  <?php foreach ($tabs as [$tid, $tlbl]): ?>
+  <a class="t-tab" href="#<?= h($tid) ?>" data-tab="<?= h($tid) ?>"><?= h($tlbl) ?></a>
+  <?php endforeach; ?>
+</nav>
+<?php endif; ?>
+
 <?php if ($dubByProv !== []): ?>
 <h2><?= h(t('किस OTT पर कौन सी ऑडियो')) ?></h2>
 <p class="dim small"><?= h(t('यह इस title की OTT पर मिलने वाली ऑडियो/dub है — फिल्म की मूल भाषा से अलग।')) ?></p>
@@ -452,7 +470,7 @@ crumbs($tcrumbs);
 <?php endif; ?>
 
 <?php if (nz($title['overview'] ?? null) !== null): ?>
-<h2><?= h(t('कहानी')) ?></h2>
+<h2 id="s-story"><?= h(t('कहानी')) ?></h2>
 <?php if (nz($meta['tagline'] ?? null) !== null): ?><p class="tagline">“<?= h($meta['tagline']) ?>”</p><?php endif; ?>
 <p><?= h($title['overview']) ?></p>
 <?php endif; ?>
@@ -468,7 +486,7 @@ crumbs($tcrumbs);
 <?php endif; ?>
 
 <?php if ($cast !== []): ?>
-<h2><?= h(t('कलाकार')) ?></h2>
+<h2 id="s-cast"><?= h(t('कलाकार')) ?></h2>
 <div class="castrow">
   <?php foreach ($cast as $c): ?>
   <a class="castcard" href="<?= h(person_url($c)) ?>">
@@ -501,6 +519,7 @@ $rec_rail = function (array $items): void {
 };
 ?>
 
+<?php if ($byDirector !== [] || $similar !== []): ?><span id="s-similar" class="s-anchor" aria-hidden="true"></span><?php endif; ?>
 <?php if ($byDirector !== []): ?>
 <h2><?= h(OTT_LANG === 'hi' ? ($is_tv ? 'इसी क्रिएटर की और' : 'इसी निर्देशक की और') : ($is_tv ? 'More from this creator' : 'More from this director')) ?></h2>
 <?php $rec_rail($byDirector); ?>
@@ -552,7 +571,7 @@ foreach ($spells as $s) {
 $hasMoved = $pastNm !== [];   // कभी platform बदला? तभी "सफ़र" कहने लायक़
 ?>
 <?php if ($tl !== []): ?>
-<h2><?= h(t('उपलब्धता का इतिहास')) ?></h2>
+<h2 id="s-history"><?= h(t('उपलब्धता का इतिहास')) ?></h2>
 <p class="dim small"><?= h(t('यह जानकारी सिर्फ़ OTT गुरु पर है — हम रोज़ जाँचते हैं कि कौन सी चीज़ किस platform पर आई और कब हटी।')) ?></p>
 
 <?php if ($spells !== []): ?>
@@ -622,7 +641,7 @@ $hasMoved = $pastNm !== [];   // कभी platform बदला? तभी "स
 </div>
 <?php endif; ?>
 
-<h2><?= h(t('फिल्म के तथ्य')) ?></h2>
+<h2 id="s-facts"><?= h(t('फिल्म के तथ्य')) ?></h2>
 <div class="facts">
   <?php $plink = fn ($c) => '<a href="' . h(person_url($c)) . '">' . h($c['name']) . '</a>'; ?>
   <?php if ($directors !== []): ?><div class="fact"><div class="k"><?= OTT_LANG === 'hi' ? ($is_tv ? 'क्रिएटर' : 'निर्देशक') : ($is_tv ? 'Creator' : 'Director') ?></div><div class="v" style="font-size:14px"><?= implode(', ', array_map($plink, $directors)) ?></div></div><?php endif; ?>
@@ -662,6 +681,18 @@ $txt = rawurlencode($title['title'] . ' — OTTGuru');
 
 <script>
 (function(){
+  // section tabs — active tab को scroll के साथ highlight (smooth-scroll CSS से)
+  var tabs = [].slice.call(document.querySelectorAll('.t-tab'));
+  if (tabs.length){
+    var secs = tabs.map(function(t){return document.getElementById(t.dataset.tab);}).filter(Boolean);
+    var spy = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){
+        var id = e.target.id;
+        tabs.forEach(function(t){ t.classList.toggle('on', t.dataset.tab===id); });
+      }});
+    }, {rootMargin:'-42% 0px -52% 0px'});
+    secs.forEach(function(s){ spy.observe(s); });
+  }
   // timeline reveal — JS हो तभी छिपाकर animate (no-JS पर content दिखता ही रहे)
   var els = document.querySelectorAll('[data-reveal]');
   if (matchMedia('(prefers-reduced-motion:reduce)').matches){

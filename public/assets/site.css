@@ -413,6 +413,20 @@ section, .sec{margin-top:44px}
 .chip img{width:26px;height:26px;border-radius:7px}
 .chip:hover{border-color:var(--blue)}
 
+/* ---------------------------------------------------------------- title page section-tabs */
+.t-tabs{position:sticky;top:63px;z-index:30;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
+  margin:20px -22px 10px;padding:10px 22px;
+  background:rgba(9,9,11,.72);backdrop-filter:blur(14px) saturate(1.3);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.t-tabs::-webkit-scrollbar{display:none}
+.t-tab{flex:0 0 auto;padding:7px 15px;border-radius:999px;color:var(--ink2);font-size:13.5px;font-weight:500;
+  border:1px solid transparent;white-space:nowrap;transition:.16s}
+.t-tab:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+.t-tab.on{color:#fff;background:var(--grad);box-shadow:var(--shb)}
+.s-anchor{display:block;height:0}
+[id^="s-"]{scroll-margin-top:120px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
 /* ---------------------------------------------------------------- title page */
 .t-head{display:flex;gap:26px;margin-top:8px}
 .t-poster img{width:230px;border-radius:16px;display:block;border:1px solid var(--line);
