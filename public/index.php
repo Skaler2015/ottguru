@@ -54,6 +54,12 @@ if (count($seg) === 1 && $seg[0] === 'search') {
     exit;
 }
 
+// live suggest (JSON) — /suggest?q=...  (command-palette की खोज)
+if (count($seg) === 1 && $seg[0] === 'suggest') {
+    require OTT_ROOT . '/site/pages/suggest.php';
+    exit;
+}
+
 // Browse + filters — /browse?type=&genre=&lang=&platform=&year=&offer=&sort=
 if (count($seg) === 1 && $seg[0] === 'browse') {
     require OTT_ROOT . '/site/pages/browse.php';

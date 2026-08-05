@@ -36,7 +36,7 @@ function cache_key_for_request(): ?string
     $first = $path === '' ? '' : (explode('/', $path)[0]);
 
     // ये कभी cache मत करो — बदलते/निजी/non-HTML
-    if (in_array($first, ['admin', 'search', 'bin'], true) || $path === 'sitemap.xml') {
+    if (in_array($first, ['admin', 'search', 'suggest', 'bin'], true) || $path === 'sitemap.xml') {
         return null;
     }
 

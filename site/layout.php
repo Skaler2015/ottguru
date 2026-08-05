@@ -144,6 +144,80 @@ function page_footer(): void
   <a href="/hata"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg><?= h(t('क्या हटा')) ?></a>
   <a href="<?= h(lang_switch_url(OTT_LANG === 'hi' ? 'en' : 'hi')) ?>"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><?= OTT_LANG === 'hi' ? 'EN' : 'हिं' ?></a>
 </nav>
+
+<?php /* command-palette — / से या search icon से खुलता है; live poster suggestions */ ?>
+<div class="cmdk" id="cmdk" hidden role="dialog" aria-modal="true" aria-label="<?= h(t('खोजें')) ?>"
+     data-ph="<?= h(t('फिल्म, सीरीज़ या platform खोजिए…')) ?>"
+     data-empty="<?= h(OTT_LANG === 'hi' ? 'कुछ नहीं मिला — नाम अंग्रेज़ी में लिखकर देखिए।' : 'Nothing found — try the English spelling.') ?>"
+     data-recent="<?= h(OTT_LANG === 'hi' ? 'हाल की खोज' : 'Recent') ?>">
+  <div class="cmdk-back" data-cmdk-close></div>
+  <div class="cmdk-box">
+    <div class="cmdk-in">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="cmdk-input" type="text" autocomplete="off" spellcheck="false" aria-label="<?= h(t('खोजें')) ?>" aria-controls="cmdk-results">
+      <kbd class="cmdk-esc">Esc</kbd>
+    </div>
+    <div class="cmdk-results" id="cmdk-results" role="listbox"></div>
+    <div class="cmdk-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> <?= OTT_LANG === 'hi' ? 'चुनें' : 'navigate' ?></span>
+      <span><kbd>↵</kbd> <?= OTT_LANG === 'hi' ? 'खोलें' : 'open' ?></span>
+      <span><kbd>/</kbd> <?= OTT_LANG === 'hi' ? 'खोज' : 'search' ?></span>
+    </div>
+  </div>
+</div>
+<script>
+/* command-palette — live suggest + keyboard + recent (localStorage) */
+(function(){
+  var root=document.getElementById('cmdk'); if(!root) return;
+  var input=document.getElementById('cmdk-input'), res=document.getElementById('cmdk-results');
+  var emptyTxt=root.dataset.empty, recentTxt=root.dataset.recent, LS='ottg_recent';
+  input.placeholder=root.dataset.ph;
+  var open=false, items=[], active=-1, timer=null, ctrl=null;
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+  function recent(){ try{return JSON.parse(localStorage.getItem(LS)||'[]')}catch(e){return[]} }
+  function pushRecent(it){ try{var r=recent().filter(function(x){return x.url!==it.url});
+    r.unshift({url:it.url,title:it.title,meta:it.meta,img:it.img,rate:it.rate});
+    localStorage.setItem(LS,JSON.stringify(r.slice(0,6)));}catch(e){} }
+  function render(list,isRecent){
+    items=list||[]; active=-1;
+    if(!items.length){ res.innerHTML='<div class="cmdk-msg">'+(input.value.trim()?esc(emptyTxt):'')+'</div>'; return; }
+    var head=isRecent?'<div class="cmdk-head">'+esc(recentTxt)+'</div>':'';
+    res.innerHTML=head+items.map(function(it,i){
+      var img=it.img?'<img src="'+esc(it.img)+'" alt="" loading="lazy">':'<span class="cmdk-ph"></span>';
+      var rate=it.rate?'<span class="cmdk-rate">★ '+esc(it.rate)+'</span>':'';
+      return '<a class="cmdk-item" role="option" href="'+esc(it.url)+'" data-i="'+i+'">'+img+
+        '<span class="cmdk-tw"><b>'+esc(it.title)+'</b><span class="cmdk-m">'+esc(it.meta)+'</span></span>'+rate+'</a>';
+    }).join('');
+  }
+  function show(){ root.hidden=false; document.body.style.overflow='hidden';
+    requestAnimationFrame(function(){root.classList.add('on')}); open=true;
+    input.value=''; render(recent(),true); input.focus(); }
+  function hide(){ root.classList.remove('on'); open=false; document.body.style.overflow='';
+    if(ctrl){ctrl.abort();ctrl=null;} setTimeout(function(){root.hidden=true;res.innerHTML='';},170); }
+  function fetchQ(q){ if(ctrl)ctrl.abort(); ctrl=('AbortController'in window)?new AbortController():null;
+    fetch('/suggest?q='+encodeURIComponent(q),ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json()}).then(function(d){ if(d.q!==input.value.trim())return; render(d.items,false); })
+      .catch(function(){}); }
+  input.addEventListener('input',function(){ var q=input.value.trim(); clearTimeout(timer);
+    if(q.length<2){ render(recent(),true); return; } timer=setTimeout(function(){fetchQ(q)},160); });
+  function move(d){ var els=res.querySelectorAll('.cmdk-item'); if(!els.length)return;
+    active=(active+d+els.length)%els.length;
+    els.forEach(function(e,i){e.classList.toggle('active',i===active); if(i===active)e.scrollIntoView({block:'nearest'});}); }
+  function go(a){ var i=+a.dataset.i; if(items[i])pushRecent(items[i]); location.href=a.getAttribute('href'); }
+  input.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();move(1);}
+    else if(e.key==='ArrowUp'){e.preventDefault();move(-1);}
+    else if(e.key==='Enter'){ var els=res.querySelectorAll('.cmdk-item');
+      if(active>=0&&els[active]){go(els[active]);} else if(input.value.trim()){location.href='/search?q='+encodeURIComponent(input.value.trim());} }
+    else if(e.key==='Escape'){hide();} });
+  res.addEventListener('click',function(e){ var a=e.target.closest('.cmdk-item'); if(a){e.preventDefault();go(a);} });
+  root.addEventListener('mousedown',function(e){ if(e.target.hasAttribute('data-cmdk-close'))hide(); });
+  document.querySelectorAll('.nav-search, .bnav a[href="/search"], [data-cmdk-open]').forEach(function(el){
+    el.addEventListener('click',function(e){ e.preventDefault(); show(); }); });
+  addEventListener('keydown',function(e){ if(open)return; var t=e.target,tag=(t.tagName||'').toLowerCase();
+    if(e.key==='/'&&tag!=='input'&&tag!=='textarea'&&!t.isContentEditable){ e.preventDefault(); show(); } });
+})();
+</script>
 <script>
 /* sticky nav — ऊपर पारदर्शी, नीचे scroll पर glass। rAF से हल्का। */
 (function(){
