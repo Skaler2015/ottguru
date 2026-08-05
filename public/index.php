@@ -66,6 +66,12 @@ if (count($seg) === 1 && $seg[0] === 'browse') {
     exit;
 }
 
+// वॉचलिस्ट — /wishlist  (client-side localStorage; shell यहाँ से)
+if (count($seg) === 1 && $seg[0] === 'wishlist') {
+    require OTT_ROOT . '/site/pages/wishlist.php';
+    exit;
+}
+
 // admin dashboard — /admin  या गुप्त  /<admin_path>  (जैसे /skaler2015)।
 // दोनों admin.php पर जाते हैं, जो password login माँगता है (session में याद रहता है)।
 // गुप्त path config.php (git से बाहर) में रहता है — कोड में कभी नहीं। इस तरह

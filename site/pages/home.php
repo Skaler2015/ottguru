@@ -208,6 +208,15 @@ page_header([
   </div>
 </section>
 
+<?php /* हाल में देखी — client-side (localStorage); इतिहास न हो तो छुपा रहता है */ ?>
+<section data-seen-rail hidden>
+  <div class="head"><div>
+    <span class="eyebrow"><?= OTT_LANG === 'hi' ? 'आपने' : 'You' ?></span>
+    <h2><?= h(OTT_LANG === 'hi' ? 'हाल में देखी' : 'Recently viewed') ?></h2>
+  </div><a class="link" href="/wishlist"><?= OTT_LANG === 'hi' ? 'वॉचलिस्ट →' : 'Wishlist →' ?></a></div>
+  <div class="grid" data-grid></div>
+</section>
+
 <?php if ($stats !== [] && (int) ($stats['titles'] ?? 0) > 0): ?>
 <?php $fmt = fn(int $x) => number_format($x); ?>
 <div class="intel">

@@ -356,6 +356,25 @@ crumbs($tcrumbs);
     </div>
     <?php endif; ?>
 
+    <?php
+    // wishlist + recently-viewed का item (client-side localStorage — बिना login)
+    $pageItem = json_encode([
+        'url'   => title_url($title),
+        'title' => $title['title'],
+        'img'   => tmdb_img($title['poster_path'], 'w185'),
+        'meta'  => trim((string) ($year ?? '')) . ' · ' . media_label($title['media_type']),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ?>
+    <div class="t-actions">
+      <button type="button" class="btn-ghost wish-btn" data-wish='<?= h($pageItem) ?>' data-seen="1" aria-pressed="false"
+              data-add="<?= h(OTT_LANG === 'hi' ? 'वॉचलिस्ट में जोड़ें' : 'Add to Wishlist') ?>"
+              data-added="<?= h(OTT_LANG === 'hi' ? 'वॉचलिस्ट में ✓' : 'In Wishlist ✓') ?>">
+        <svg class="wi" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span class="wt"><?= h(OTT_LANG === 'hi' ? 'वॉचलिस्ट में जोड़ें' : 'Add to Wishlist') ?></span>
+      </button>
+      <a class="btn-ghost" href="#share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg><?= h(t('शेयर करें')) ?></a>
+    </div>
+
     <h2><?= h(t('अभी कहाँ देखें')) ?></h2>
     <?php if ($stream === [] && $paisa === []): ?>
       <div class="offer-none">
@@ -632,7 +651,7 @@ $shareUrl = 'https://ottguru.in' . title_url($title);
 $u = rawurlencode($shareUrl);
 $txt = rawurlencode($title['title'] . ' — OTTGuru');
 ?>
-<h2><?= h(t('शेयर करें')) ?></h2>
+<h2 id="share"><?= h(t('शेयर करें')) ?></h2>
 <div class="share" data-url="<?= h($shareUrl) ?>">
   <a href="https://wa.me/?text=<?= $txt ?>%20<?= $u ?>" target="_blank" rel="noopener"><span class="ic" style="background:#25D366"></span>WhatsApp</a>
   <a href="https://t.me/share/url?url=<?= $u ?>&text=<?= $txt ?>" target="_blank" rel="noopener"><span class="ic" style="background:#2AABEE"></span>Telegram</a>

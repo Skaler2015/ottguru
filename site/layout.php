@@ -82,6 +82,7 @@ function page_header(array $opt = []): void
       <a class="tlink" href="/browse"><?= h(t('ब्राउज़')) ?></a>
       <a class="tlink" href="/naya"><?= h(t('नया आया')) ?></a>
       <a class="tlink" href="/hata"><?= h(t('क्या हटा')) ?></a>
+      <a class="tlink" href="/wishlist" aria-label="<?= h(OTT_LANG === 'hi' ? 'वॉचलिस्ट' : 'Wishlist') ?>"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></a>
       <a class="nav-search" href="/search" aria-label="<?= h(t('खोजें')) ?>"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></a>
       <span class="langsw">
         <a class="<?= OTT_LANG === 'en' ? 'on' : '' ?>" href="<?= h(lang_switch_url('en')) ?>">EN</a><!--
@@ -223,6 +224,39 @@ function page_footer(): void
 })();
 </script>
 <script>
+/* wishlist + recently-viewed — localStorage, बिना login (§19)। */
+(function(){
+  function get(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return[]}}
+  function set(k,v){try{localStorage.setItem(k,JSON.stringify(v.slice(0,60)))}catch(e){}}
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+  var SEEN='ottg_seen', WISH='ottg_wish';
+  function inList(k,u){return get(k).some(function(x){return x.url===u})}
+  function record(k,it,max){var a=get(k).filter(function(x){return x.url!==it.url});a.unshift(it);set(k,a.slice(0,max||40));}
+  function toggle(k,it){var a=get(k),f=false,i;for(i=0;i<a.length;i++){if(a[i].url===it.url){a.splice(i,1);f=true;break;}}if(!f)a.unshift(it);set(k,a);return !f;}
+  function cardHTML(it){
+    var img=it.img?'<img loading="lazy" src="'+esc(it.img)+'" alt="">':'<span class="noposter">'+esc(it.title)+'</span>';
+    return '<a class="card" href="'+esc(it.url)+'"><span class="cposter">'+img+'</span>'+
+      '<span class="card-t">'+esc(it.title)+'</span><span class="card-y">'+esc(it.meta||'')+'</span></a>';
+  }
+  function fillGrid(sel,k){document.querySelectorAll(sel).forEach(function(box){
+    var list=get(k), host=box.querySelector('[data-grid]'), empty=box.querySelector('[data-empty]');
+    if(!list.length){ if(empty)empty.hidden=false; return; }
+    if(empty)empty.hidden=true;
+    if(host)host.innerHTML=list.map(cardHTML).join('');
+    box.hidden=false;
+  });}
+  // wishlist button(s) + recently-viewed record (title page)
+  document.querySelectorAll('.wish-btn').forEach(function(btn){
+    var it; try{it=JSON.parse(btn.dataset.wish);}catch(e){return;}
+    if(btn.dataset.seen) record(SEEN,it,30);
+    function paint(on){ btn.classList.toggle('on',on); btn.setAttribute('aria-pressed',on?'true':'false');
+      var t=btn.querySelector('.wt'); if(t)t.textContent=on?btn.dataset.added:btn.dataset.add; }
+    paint(inList(WISH,it.url));
+    btn.addEventListener('click',function(){ paint(toggle(WISH,it)); });
+  });
+  fillGrid('[data-seen-rail]',SEEN);   // home: हाल में देखी
+  fillGrid('[data-wish-list]',WISH);   // /wishlist पेज
+})();
 /* sticky nav — ऊपर पारदर्शी, नीचे scroll पर glass। rAF से हल्का। */
 (function(){
   var top=document.querySelector('.top'); if(!top) return;
