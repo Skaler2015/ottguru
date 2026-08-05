@@ -74,6 +74,19 @@ h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;text-wrap
 .glass{background:rgba(24,24,27,.62);backdrop-filter:blur(16px) saturate(1.3);
   border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--sh2)}
 .glow{box-shadow:var(--glow)}
+/* wishlist / share action row (title पेज) + toggle-on अवस्था */
+.t-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 6px}
+.wish-btn{transition:.16s}
+.wish-btn.on{border-color:transparent;color:#fff;
+  background:linear-gradient(var(--card2),var(--card2)) padding-box,var(--grad2) border-box;box-shadow:var(--shb)}
+.wish-btn.on .wi{fill:var(--pink);stroke:var(--pink)}
+/* wishlist empty-state */
+.wl-empty{max-width:440px;margin:26px auto;text-align:center;padding:34px 22px;border-radius:var(--r);
+  border:1px dashed var(--line2);background:rgba(255,255,255,.02)}
+.wl-empty[hidden]{display:none}
+.wl-ico{width:78px;height:78px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;
+  color:var(--purple);background:radial-gradient(closest-side,rgba(139,92,246,.16),transparent)}
+.wl-empty h3{font-size:19px;margin-bottom:6px}
 /* skeleton shimmer — poster लोड होने तक + command-palette fetch के दौरान */
 @keyframes shimmer{100%{background-position:-200% 0}}
 .skel{background:linear-gradient(100deg,var(--card) 28%,var(--card2) 48%,var(--card) 68%);
