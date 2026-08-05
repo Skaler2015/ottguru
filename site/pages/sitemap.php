@@ -100,19 +100,28 @@ try {
     // people/title_credits table अभी नहीं
 }
 
-// ---- query 9: title पेज — सिर्फ़ वे जिन पर अभी कुछ उपलब्ध है --------------------
-// poster भी लेते हैं → image sitemap (Google Images ट्रैफ़िक; poster TMDB CDN से)।
+// ---- query 9: title पेज — हर वो title जो कभी किसी OTT पर रही (current या हटी) ------
+// पहले सिर्फ़ is_current=1 था — इससे "अब हटी पर इतिहास वाली" movies (हमारा असली unique
+// content) और वे जिनकी दोबारा-availability बाद में आई, Google को sitemap से पता ही नहीं
+// चलती थीं। अब कोई भी availability (is_current 0/1) = हमारे पास उसका इतिहास है = index
+// होने लायक़ असली पेज (§8 सुरक्षित; सिर्फ़ TMDB overview वाले पतले पेज इसमें नहीं आते
+// क्योंकि उनके पास कोई availability row नहीं)। poster भी → image sitemap।
+// सुरक्षा: 50,000 URL की sitemap सीमा से पहले (popularity क्रम में) 49,000 पर रोकते हैं;
+// इससे ज़्यादा होने पर sitemap-index में बाँटना अगला कदम है।
 $titles = all($PDO, "
     SELECT t.slug, t.media_type, t.title, t.poster_path,
+           MAX(a.is_current) AS is_live,
            GREATEST(t.updated_at, COALESCE(MAX(a.last_seen), t.updated_at)) AS lastmod
       FROM titles t
-      JOIN availability a ON a.title_id = t.id AND a.is_current = 1
-     WHERE a.country = ?
+      JOIN availability a ON a.title_id = t.id AND a.country = ?
      GROUP BY t.id
-     ORDER BY t.popularity DESC",
+     ORDER BY t.popularity DESC
+     LIMIT 49000",
     [$country]);
 foreach ($titles as $t) {
-    $urls[] = [$base . title_url($t), substr((string) $t['lastmod'], 0, 10), tmdb_img($t['poster_path'], 'w500')];
+    // अभी live titles को थोड़ी ऊँची priority (Google इसे संकेत भर मानता है)
+    $urls[] = [$base . title_url($t), substr((string) $t['lastmod'], 0, 10),
+               tmdb_img($t['poster_path'], 'w500'), (int) $t['is_live'] === 1 ? '0.7' : '0.5'];
 }
 
 // ---- XML ------------------------------------------------------------------------
@@ -129,6 +138,10 @@ foreach ($urls as $u) {
     }
     if ($img !== null) {
         echo "<image:image><image:loc>" . h($img) . "</image:loc></image:image>";
+    }
+    $priority = $u[3] ?? null;
+    if ($priority !== null) {
+        echo "<priority>" . h($priority) . "</priority>";
     }
     echo "</url>\n";
 }

@@ -288,6 +288,13 @@ if ($faqs !== []) {
 }
 $graph[] = ['@type' => 'Organization', 'name' => 'OTTGuru', 'url' => 'https://ottguru.in/'];
 
+// पतला पेज? — अगर यह title कभी किसी OTT पर नहीं रही (न अभी offers, न कोई इतिहास),
+// तो पेज पर सिर्फ़ TMDB overview बचता है = पतला/duplicate। ऐसे पेज noindex रखते हैं
+// ताकि Google की नज़र में पूरी साइट का भरोसा बना रहे और अच्छे पेज index हों (CLAUDE.md §8)।
+// जैसे ही providers-sync इसकी availability भर देगा, यह अपने-आप index होने लायक़ हो जाएगा।
+$thinPage = ($stream === [] && $paisa === [] && $spells === [] && $events === []
+             && $langs === [] && $cast === []);
+
 page_header([
     'title'       => tf('%s कहाँ देखें', $h1),
     'description' => $desc,
@@ -295,6 +302,7 @@ page_header([
     'image'       => tmdb_img($title['poster_path'], 'w500'),
     'image_alt'   => tf('%s का poster', $title['title']),
     'og_type'     => $is_tv ? 'video.tv_show' : 'video.movie',
+    'noindex'     => $thinPage,
     'jsonld'      => ['@context' => 'https://schema.org', '@graph' => $graph],
 ]);
 crumbs($tcrumbs);
