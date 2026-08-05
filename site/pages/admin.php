@@ -560,6 +560,23 @@ $today = one($PDO, "SELECT
   FROM availability_changes WHERE changed_on = CURDATE()") ?? ['a' => 0, 'r' => 0];
 $todayRuns = (int) scalar($PDO, 'SELECT COUNT(*) FROM sync_runs WHERE DATE(started_at) = CURDATE()');
 
+// पिछले 14 दिन की गतिविधि — रोज़ जुड़े/हटे (chart के लिए)
+$actRaw = [];
+foreach (all($PDO, "SELECT changed_on d,
+        COALESCE(SUM(change_type='added'),0)   a,
+        COALESCE(SUM(change_type='removed'),0) r
+      FROM availability_changes
+     WHERE changed_on >= (CURDATE() - INTERVAL 13 DAY)
+     GROUP BY changed_on") as $row) {
+    $actRaw[substr((string) $row['d'], 0, 10)] = ['a' => (int) $row['a'], 'r' => (int) $row['r']];
+}
+$activity = [];
+for ($i = 13; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-$i day"));
+    $activity[] = ['d' => $d, 'a' => $actRaw[$d]['a'] ?? 0, 'r' => $actRaw[$d]['r'] ?? 0];
+}
+$actMax = max(1, max(array_map(fn ($x) => max($x['a'], $x['r']), $activity)));
+
 // coverage
 $pcov = one($PDO, "SELECT COUNT(*) tot, COALESCE(SUM(poster_path IS NOT NULL AND poster_path<>''),0) wp FROM titles")
       ?? ['tot' => 0, 'wp' => 0];
@@ -695,6 +712,24 @@ $runcell = function (?array $r) use ($e): string {
   <div class="acard ok"><div class="v">+<?= $nf((int) $today['a']) ?></div><div class="k">आज जुड़े</div></div>
   <div class="acard <?= (int) $today['r'] > 0 ? 'bad' : '' ?>"><div class="v">−<?= $nf((int) $today['r']) ?></div><div class="k">आज हटे</div></div>
   <div class="acard"><div class="v"><?= $nf($todayRuns) ?></div><div class="k">आज की sync दौड़ें</div></div>
+</div>
+
+<!-- गतिविधि — पिछले 14 दिन (जुड़े हरे ऊपर, हटे गुलाबी नीचे) -->
+<div class="panel" style="margin-bottom:16px">
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'गतिविधि — पिछले 14 दिन' : 'Activity — last 14 days' ?></h3>
+    <span class="t"><span style="color:var(--good)">■</span> <?= OTT_LANG === 'hi' ? 'जुड़े' : 'added' ?>
+      · <span style="color:var(--pink)">■</span> <?= OTT_LANG === 'hi' ? 'हटे' : 'removed' ?></span></div>
+  <div class="actchart">
+    <?php foreach ($activity as $day): ?>
+    <div class="actcol" title="<?= $e(substr($day['d'], 5)) ?> · +<?= (int) $day['a'] ?> / −<?= (int) $day['r'] ?>">
+      <div class="actbars">
+        <span class="actadd" style="height:<?= (int) round($day['a'] / $actMax * 100) ?>%"></span>
+        <span class="actrem" style="height:<?= (int) round($day['r'] / $actMax * 100) ?>%"></span>
+      </div>
+      <span class="actday"><?= $e((int) substr($day['d'], 8, 2)) ?></span>
+    </div>
+    <?php endforeach; ?>
+  </div>
 </div>
 
 <div class="agrid">
