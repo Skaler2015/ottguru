@@ -204,14 +204,17 @@ section, .sec{margin-top:44px}
 .pcard{flex:0 0 172px;scroll-snap-align:start;border-radius:16px;overflow:hidden;position:relative;
   aspect-ratio:2/3;border:1px solid var(--line);background:var(--ph-bg);display:block;color:var(--ink);
   box-shadow:var(--sh1);transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s,border-color .24s}
-.pcard:hover{transform:translateY(-7px) scale(1.02);border-color:var(--line2);box-shadow:var(--sh2)}
-.pcard img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pcard:hover{transform:translateY(-7px) scale(1.02);border-color:transparent;
+  box-shadow:var(--sh2),0 0 0 1.5px rgba(139,92,246,.5),0 16px 44px -16px rgba(139,92,246,.55)}
+.pcard img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  transition:transform .5s cubic-bezier(.2,.7,.3,1)}
+.pcard:hover img{transform:scale(1.06)}
 .pcard .noposter{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:14px;
   color:var(--ink2);font-family:var(--disp);font-weight:600;font-size:13.5px;line-height:1.3;background:var(--ph-bg)}
-.pcard .ov{position:absolute;inset:0;background:linear-gradient(180deg,transparent 38%,rgba(5,8,13,.55) 62%,rgba(4,7,11,.94));
+.pcard .ov{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,transparent 36%,rgba(9,9,11,.6) 62%,rgba(6,6,8,.95));
   padding:13px;display:flex;flex-direction:column;justify-content:flex-end;gap:5px}
-.pcard .rate{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:8px;
-  background:rgba(8,11,18,.6);border:1px solid rgba(255,255,255,.14);
+.pcard .rate{position:absolute;top:10px;left:10px;z-index:2;padding:3px 9px;border-radius:8px;
+  background:rgba(9,9,11,.6);border:1px solid rgba(255,255,255,.14);
   backdrop-filter:blur(8px);font-family:var(--mono);font-size:11.5px;font-weight:600}
 .pcard .rate b{color:var(--warn)}
 .pcard .t{font-family:var(--disp);font-size:14.5px;font-weight:600;line-height:1.25}
@@ -268,13 +271,23 @@ section, .sec{margin-top:44px}
 .barrow .val{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink2)}
 
 /* ---------------------------------------------------------------- legacy: title grid card */
-.grid{display:grid;gap:15px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:10px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:10px}
 .card{display:flex;flex-direction:column;color:var(--ink)}
 .card:hover .card-t{color:var(--blue)}
-.card img,.card .noposter{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:14px;display:block;
-  border:1px solid var(--line);transition:transform .22s cubic-bezier(.2,.7,.3,1),box-shadow .22s,border-color .22s;
-  background:var(--ph-bg);box-shadow:var(--sh1)}
-.card:hover img,.card:hover .noposter{transform:translateY(-6px);border-color:var(--line2);box-shadow:var(--sh2)}
+/* clipped poster — hover पर image अंदर ही ज़ूम, कोने साफ़, gradient-ring glow */
+.cposter{position:relative;display:block;aspect-ratio:2/3;border-radius:14px;overflow:hidden;
+  border:1px solid var(--line);background:var(--ph-bg);box-shadow:var(--sh1);
+  transition:transform .24s cubic-bezier(.2,.7,.3,1),box-shadow .24s,border-color .24s}
+.card:hover .cposter{transform:translateY(-6px);border-color:transparent;
+  box-shadow:var(--sh2),0 0 0 1.5px rgba(139,92,246,.5),0 14px 40px -14px rgba(139,92,246,.5)}
+.cposter img,.cposter .noposter{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .45s cubic-bezier(.2,.7,.3,1)}
+.card:hover .cposter img{transform:scale(1.07)}
+.crate{position:absolute;top:9px;left:9px;z-index:2;padding:3px 8px;border-radius:8px;
+  background:rgba(9,9,11,.62);border:1px solid var(--line2);backdrop-filter:blur(8px);
+  font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--warn);
+  opacity:0;transform:translateY(-4px);transition:.2s}
+.card:hover .crate{opacity:1;transform:none}
 .noposter{background:var(--ph-bg);display:flex;align-items:center;justify-content:center;color:var(--ink2);
   font-family:var(--disp);font-weight:600;font-size:13.5px;text-align:center;padding:12px;line-height:1.3}
 .card-t{margin-top:10px;font-size:14px;font-weight:600;font-family:var(--disp);line-height:1.35;letter-spacing:-.01em}

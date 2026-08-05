@@ -166,11 +166,18 @@ function render_title_grid(array $titles): void
     foreach ($titles as $t) {
         $img = tmdb_img($t['poster_path'] ?? null, 'w342');
         echo '<a class="card" href="' . h(title_url($t)) . '">';
+        // poster एक clipped wrapper में — ताकि hover पर image ज़ूम हो, कोने साफ़ रहें
+        echo '<span class="cposter">';
         if ($img !== null) {
             echo '<img loading="lazy" src="' . h($img) . '" alt="' . h(tf('%s का poster', $t['title'])) . '">';
         } else {
             echo '<span class="noposter">' . h(mb_substr($t['title'], 0, 40, 'UTF-8')) . '</span>';
         }
+        $va = (float) ($t['vote_average'] ?? 0);
+        if ($va > 0) {
+            echo '<span class="crate">★ ' . number_format($va, 1) . '</span>';
+        }
+        echo '</span>';
         echo '<span class="card-t">' . h($t['title']) . '</span>';
         echo '<span class="card-y">' . h((string) ($t['release_year'] ?? '')) ;
         if (isset($t['media_type'])) {
