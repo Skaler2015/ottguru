@@ -6,6 +6,48 @@
 declare(strict_types=1);
 
 /**
+ * mega-menu का डेटा — genres / platforms / languages (सब असली, उपलब्ध titles वाले)।
+ * हर पेज पर nav बनता है, पर page-cache के कारण ये queries सिर्फ़ cache-miss पर चलती हैं।
+ * try/catch — कोई table न हो तो वो column चुपचाप छूट जाता है।
+ */
+function nav_mega(): array
+{
+    global $PDO, $CFG;
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $country = $CFG['country'] ?? 'IN';
+    $out = ['genres' => [], 'platforms' => [], 'langs' => []];
+    try {
+        $out['platforms'] = all($PDO, "SELECT p.slug, p.name
+              FROM providers p
+              JOIN availability a ON a.provider_id = p.id AND a.is_current = 1
+                                 AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+             WHERE p.is_active = 1
+             GROUP BY p.id ORDER BY p.display_priority, COUNT(DISTINCT a.title_id) DESC LIMIT 10", [$country]);
+    } catch (Throwable $e) { /* providers न हों — असंभव, पर सुरक्षित */ }
+    try {
+        $out['genres'] = all($PDO, "SELECT g.slug, g.name_en, COUNT(DISTINCT t.id) n
+              FROM title_genres tg
+              JOIN genres g ON g.id = tg.genre_id
+              JOIN titles t ON t.id = tg.title_id
+              JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                                 AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+             GROUP BY g.id HAVING n >= 3 ORDER BY n DESC LIMIT 12", [$country]);
+    } catch (Throwable $e) { /* genres table अभी नहीं */ }
+    try {
+        $out['langs'] = all($PDO, "SELECT l.lang_code, COUNT(DISTINCT t.id) n
+              FROM availability a
+              JOIN titles t ON t.id = a.title_id
+              JOIN title_languages l ON l.title_id = t.id
+             WHERE a.country = ? AND a.is_current = 1 AND a.offer_type IN ('flatrate','ads','free')
+             GROUP BY l.lang_code ORDER BY n DESC LIMIT 8", [$country]);
+    } catch (Throwable $e) { /* title_languages न हो — असंभव */ }
+    return $cache = $out;
+}
+
+/**
  * $opt:
  *   title       — <title> (साइट का नाम अपने-आप जुड़ जाता है)
  *   description — meta description
@@ -79,7 +121,32 @@ function page_header(array $opt = []): void
     <a class="logo" href="/">OTT<span>Guru</span></a>
     <nav class="topnav">
       <a class="tlink" href="/"><?= h(t('होम')) ?></a>
-      <a class="tlink" href="/browse"><?= h(t('ब्राउज़')) ?></a>
+      <?php $mega = nav_mega(); ?>
+      <span class="hasmega">
+        <a class="tlink" href="/browse" aria-haspopup="true"><?= h(t('ब्राउज़')) ?>
+          <svg class="mchev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></a>
+        <div class="mega" role="menu" aria-label="<?= h(t('ब्राउज़')) ?>">
+          <?php if ($mega['genres'] !== []): ?>
+          <div class="mega-col">
+            <div class="mega-h"><?= OTT_LANG === 'hi' ? 'श्रेणियाँ' : 'Genres' ?></div>
+            <?php foreach ($mega['genres'] as $g): ?><a role="menuitem" href="/genre/<?= h(rawurlencode($g['slug'])) ?>"><?= h($g['name_en']) ?><span class="mn"><?= (int) $g['n'] ?></span></a><?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+          <?php if ($mega['platforms'] !== []): ?>
+          <div class="mega-col">
+            <div class="mega-h">Platforms</div>
+            <?php foreach ($mega['platforms'] as $p): ?><a role="menuitem" href="/platform/<?= h(rawurlencode($p['slug'])) ?>"><?= h($p['name']) ?></a><?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+          <?php if ($mega['langs'] !== []): ?>
+          <div class="mega-col">
+            <div class="mega-h"><?= OTT_LANG === 'hi' ? 'भाषाएँ' : 'Languages' ?></div>
+            <?php foreach ($mega['langs'] as $l): ?><a role="menuitem" href="/browse?lang=<?= h(rawurlencode($l['lang_code'])) ?>"><?= h(lang_label($l['lang_code'])) ?></a><?php endforeach; ?>
+            <a class="mega-all" href="/browse"><?= OTT_LANG === 'hi' ? 'सभी फ़िल्टर →' : 'All filters →' ?></a>
+          </div>
+          <?php endif; ?>
+        </div>
+      </span>
       <a class="tlink" href="/naya"><?= h(t('नया आया')) ?></a>
       <a class="tlink" href="/hata"><?= h(t('क्या हटा')) ?></a>
       <a class="tlink" href="/wishlist" aria-label="<?= h(OTT_LANG === 'hi' ? 'वॉचलिस्ट' : 'Wishlist') ?>"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></a>
