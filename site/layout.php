@@ -194,7 +194,11 @@ function page_footer(): void
     input.value=''; render(recent(),true); input.focus(); }
   function hide(){ root.classList.remove('on'); open=false; document.body.style.overflow='';
     if(ctrl){ctrl.abort();ctrl=null;} setTimeout(function(){root.hidden=true;res.innerHTML='';},170); }
+  function skel(){ var row='<div class="cmdk-skrow"><span class="skel cmdk-skimg"></span>'+
+    '<span class="cmdk-sktw"><span class="skel"></span><span class="skel"></span></span></div>';
+    res.innerHTML='<div class="cmdk-sk">'+row+row+row+row+'</div>'; }
   function fetchQ(q){ if(ctrl)ctrl.abort(); ctrl=('AbortController'in window)?new AbortController():null;
+    skel();
     fetch('/suggest?q='+encodeURIComponent(q),ctrl?{signal:ctrl.signal}:{})
       .then(function(r){return r.json()}).then(function(d){ if(d.q!==input.value.trim())return; render(d.items,false); })
       .catch(function(){}); }
