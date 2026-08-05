@@ -144,6 +144,16 @@ function page_footer(): void
   <a href="/hata"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg><?= h(t('क्या हटा')) ?></a>
   <a href="<?= h(lang_switch_url(OTT_LANG === 'hi' ? 'en' : 'hi')) ?>"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><?= OTT_LANG === 'hi' ? 'EN' : 'हिं' ?></a>
 </nav>
+<script>
+/* sticky nav — ऊपर पारदर्शी, नीचे scroll पर glass। rAF से हल्का। */
+(function(){
+  var top=document.querySelector('.top'); if(!top) return;
+  var tick=false;
+  function upd(){ top.classList.toggle('scrolled', window.scrollY>8); tick=false; }
+  addEventListener('scroll',function(){ if(!tick){ tick=true; requestAnimationFrame(upd); } },{passive:true});
+  upd();
+})();
+</script>
 </body>
 </html>
 <?php
