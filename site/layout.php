@@ -357,12 +357,13 @@ function render_title_grid(array $titles): void
             echo '<span class="crate">★ ' . number_format($va, 1) . '</span>';
         }
         echo '</span>';
+        echo '<span class="card-tx">';
         echo '<span class="card-t">' . h($t['title']) . '</span>';
         echo '<span class="card-y">' . h((string) ($t['release_year'] ?? '')) ;
         if (isset($t['media_type'])) {
             echo ' · ' . h(media_label($t['media_type']));
         }
-        echo '</span></a>';
+        echo '</span></span></a>';
     }
     echo '</div>';
 }

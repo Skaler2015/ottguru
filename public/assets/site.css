@@ -394,6 +394,26 @@ section, .sec{margin-top:44px}
   font-family:var(--disp);font-weight:600;font-size:13.5px;text-align:center;padding:12px;line-height:1.3}
 .card-t{margin-top:10px;font-size:14px;font-weight:600;font-family:var(--disp);line-height:1.35;letter-spacing:-.01em}
 .card-y{color:var(--ink2);font-size:12.5px;font-family:var(--mono);margin-top:1px}
+.card-tx{display:block}
+/* browse view-toggle: results-bar + Grid/List/Compact */
+.results-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 4px}
+.viewtoggle{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:11px;background:var(--bg2)}
+.vbtn{display:grid;place-items:center;width:32px;height:30px;border:0;border-radius:8px;cursor:pointer;
+  background:none;color:var(--ink3);transition:.14s}
+.vbtn:hover{color:var(--ink)}
+.vbtn.on{color:#fff;background:var(--grad)}
+/* LIST — एक कतार, poster बाएँ, text दाएँ */
+.grid.list{grid-template-columns:1fr;gap:10px}
+.grid.list .card{flex-direction:row;align-items:center;gap:15px;padding:8px;border:1px solid var(--line);
+  border-radius:14px;background:var(--card)}
+.grid.list .cposter{width:58px;flex:0 0 auto;border-radius:9px}
+.grid.list .card-tx{display:flex;flex-direction:column;gap:2px}
+.grid.list .card-t{margin-top:0;font-size:15px}
+.grid.list .crate{top:5px;left:5px;opacity:1;transform:none;padding:1px 6px;font-size:10.5px}
+/* COMPACT — छोटे poster, सघन */
+.grid.compact{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px}
+.grid.compact .card-t{font-size:12.5px;margin-top:7px}
+.grid.compact .card-y{font-size:11px}
 
 /* new-arrivals / removed strip */
 .newrow{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;margin-top:10px;scrollbar-width:none}

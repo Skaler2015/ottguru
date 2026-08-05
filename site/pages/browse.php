@@ -214,9 +214,33 @@ $q_with = static function (array $over) use ($f_type, $f_genre, $f_lang, $f_plat
 </form>
 
 <?php if ($titles === []): ?>
-  <div class="offer-none"><?= h(t('इस चुनाव में अभी कुछ नहीं मिला।')) ?> <a href="/browse"><?= OTT_LANG === 'hi' ? 'फ़िल्टर साफ़ करें' : 'clear filters' ?></a></div>
+  <div class="wl-empty" data-empty style="display:block">
+    <div class="wl-ico" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+    <h3><?= OTT_LANG === 'hi' ? 'इस चुनाव में कुछ नहीं मिला' : 'Nothing matches this selection' ?></h3>
+    <p class="dim"><?= OTT_LANG === 'hi' ? 'कोई फ़िल्टर हटाकर देखिए।' : 'Try removing a filter.' ?></p>
+    <a class="btn-grad" href="/browse" style="margin-top:14px"><?= OTT_LANG === 'hi' ? 'फ़िल्टर साफ़ करें' : 'Clear filters' ?></a>
+  </div>
 <?php else: ?>
-  <?php render_title_grid($titles); ?>
+  <div class="results-bar">
+    <span class="dim small"><?= h(tf('%d नतीजे', $total)) ?></span>
+    <div class="viewtoggle" role="group" aria-label="<?= h(OTT_LANG === 'hi' ? 'दृश्य' : 'View') ?>">
+      <button type="button" class="vbtn" data-view="grid" aria-label="Grid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+      <button type="button" class="vbtn" data-view="list" aria-label="List"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+      <button type="button" class="vbtn" data-view="compact" aria-label="Compact"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="4"/><rect x="10" y="3" width="4" height="4"/><rect x="17" y="3" width="4" height="4"/><rect x="3" y="10" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="17" y="10" width="4" height="4"/></svg></button>
+    </div>
+  </div>
+  <div id="browse-results"><?php render_title_grid($titles); ?></div>
+  <script>
+  (function(){
+    var box=document.getElementById('browse-results'); if(!box)return;
+    var grid=box.querySelector('.grid'), btns=[].slice.call(document.querySelectorAll('.vbtn')), LS='ottg_view';
+    function apply(v){ if(!grid)return; grid.classList.remove('list','compact'); if(v==='list'||v==='compact')grid.classList.add(v);
+      btns.forEach(function(b){b.classList.toggle('on',b.dataset.view===v);b.setAttribute('aria-pressed',b.dataset.view===v);}); }
+    var saved='grid'; try{saved=localStorage.getItem(LS)||'grid'}catch(e){}
+    apply(saved);
+    btns.forEach(function(b){b.addEventListener('click',function(){ apply(b.dataset.view); try{localStorage.setItem(LS,b.dataset.view)}catch(e){} });});
+  })();
+  </script>
 <?php endif; ?>
 
 <?php if ($pages > 1): ?>
