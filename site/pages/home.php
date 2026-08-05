@@ -186,6 +186,15 @@ page_header([
       </div>
     </form>
 
+    <?php /* quick chips — सिर्फ़ असली, चलने वाले filter (§8): फिल्म/सीरीज़ + असली भाषाएँ */ ?>
+    <div class="hchips">
+      <a class="hchip cat" href="/browse?type=movie"><?= OTT_LANG === 'hi' ? 'फ़िल्में' : 'Movies' ?></a>
+      <a class="hchip cat" href="/browse?type=tv"><?= OTT_LANG === 'hi' ? 'सीरीज़' : 'Series' ?></a>
+      <?php foreach (array_slice($top_langs, 0, 6) as $lc): ?>
+        <a class="hchip" href="/browse?lang=<?= h(rawurlencode($lc['lang_code'])) ?>"><?= h(lang_label($lc['lang_code'])) ?></a>
+      <?php endforeach; ?>
+    </div>
+
     <?php if ($provs !== []): ?>
     <div class="pbadges">
       <?php foreach (array_slice($provs, 0, 10) as $p): $lg = tmdb_img($p['logo_path'], 'w45'); ?>
