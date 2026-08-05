@@ -166,7 +166,27 @@ h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;text-wrap
   border-bottom:1px solid transparent;transition:background .25s ease,border-color .25s ease,backdrop-filter .25s ease}
 .top.scrolled{backdrop-filter:blur(20px) saturate(1.5);
   background:rgba(9,9,11,.78);border-bottom:1px solid var(--line);box-shadow:0 8px 30px -18px rgba(0,0,0,.9)}
-.top-in{display:flex;align-items:center;gap:22px;height:64px}
+.top-in{display:flex;align-items:center;gap:22px;height:64px;position:relative}
+/* mega-menu — Browse पर hover/focus से Genres/Platforms/Languages */
+.hasmega{position:static}
+.hasmega>a{display:inline-flex;align-items:center;gap:4px}
+.mchev{transition:transform .2s}
+.hasmega:hover .mchev,.hasmega:focus-within .mchev{transform:rotate(180deg)}
+.mega{position:absolute;top:calc(100% - 4px);right:0;z-index:60;width:min(600px,calc(100vw - 44px));
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:20px 22px;border-radius:16px;
+  background:rgba(20,20,24,.97);backdrop-filter:blur(22px) saturate(1.3);border:1px solid var(--line2);
+  box-shadow:0 30px 70px -24px rgba(0,0,0,.85),var(--glow);
+  opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s}
+.hasmega:hover .mega,.hasmega:focus-within .mega{opacity:1;visibility:visible;transform:none}
+.mega-h{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:9px}
+.mega-col a{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 9px;border-radius:9px;color:var(--ink2);font-size:13.5px;font-weight:500}
+.mega-col a:hover{background:rgba(139,92,246,.16);color:var(--ink)}
+.mega-col .mn{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.mega-all{margin-top:6px;color:var(--blue)!important;font-weight:600}
+@media(max-width:900px){.mega{display:none}}
+@media(prefers-reduced-motion:reduce){.mega,.mchev{transition:none}}
 .logo{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:700;
   font-size:19px;letter-spacing:-.02em;color:var(--ink)}
 .logo::before{content:"";width:25px;height:25px;border-radius:8px;background:var(--grad);
