@@ -687,6 +687,26 @@ a.castcard:hover .nm{color:var(--blue)}
 @media(max-width:520px){.azlist{columns:1}}
 .azlist a{display:block;padding:6px 2px;color:var(--ink2);font-size:14px;break-inside:avoid;border-bottom:1px solid var(--line)}
 .azlist a:hover{color:var(--blue)}
+/* prose (about/privacy/terms) + contact form + cookie bar */
+.prose{max-width:720px;line-height:1.75}
+.prose h1{font-size:var(--fs-h2);margin-bottom:14px}
+.prose h2{font-size:19px;margin:26px 0 8px}
+.prose p{color:var(--ink2);margin:0 0 12px}
+.prose a{color:var(--blue)}
+.cform{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.cform label{display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--ink2)}
+.cform input,.cform textarea{background:var(--bg2);border:1px solid var(--line2);border-radius:11px;
+  padding:11px 13px;color:var(--ink);font-family:var(--body);font-size:15px;outline:0}
+.cform input:focus,.cform textarea:focus{border-color:var(--blue)}
+.cform .btn-grad{align-self:flex-start}
+.cookiebar{position:fixed;left:14px;right:14px;bottom:14px;z-index:80;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap;justify-content:center;padding:12px 18px;border-radius:14px;
+  background:rgba(20,20,24,.96);backdrop-filter:blur(16px);border:1px solid var(--line2);box-shadow:var(--sh2)}
+.cookiebar[hidden]{display:none}
+.cookiebar span{font-size:13.5px;color:var(--ink2)}
+.cookiebar a{color:var(--blue)}
+.cookiebar .btn-grad{padding:8px 16px}
+@media(max-width:560px){.cookiebar{bottom:70px}}
 
 /* ---------------------------------------------------------------- footer */
 .foot{border-top:1px solid var(--line);background:var(--bg2);margin-top:56px;padding:44px 0 96px}

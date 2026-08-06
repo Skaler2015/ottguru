@@ -191,10 +191,11 @@ function page_footer(): void
         <a href="/platform/zee5">ZEE5</a>
         <a href="/compare"><?= h(OTT_LANG === 'hi' ? 'plan तुलना' : 'Compare plans') ?></a></div>
       <div class="fcol"><h4><?= h(t('कंपनी')) ?></h4>
-        <a href="/"><?= h(t('हमारे बारे में')) ?></a>
-        <a href="/sitemap.xml">Sitemap</a>
-        <a href="/"><?= h(t('निजता')) ?></a>
-        <a href="/"><?= h(t('शर्तें')) ?></a></div>
+        <a href="/about"><?= h(t('हमारे बारे में')) ?></a>
+        <a href="/contact"><?= OTT_LANG === 'hi' ? 'संपर्क' : 'Contact' ?></a>
+        <a href="/privacy"><?= h(t('निजता')) ?></a>
+        <a href="/terms"><?= h(t('शर्तें')) ?></a>
+        <a href="/sitemap.xml">Sitemap</a></div>
       <div class="fcol"><h4><?= h(t('जुड़ें')) ?></h4>
         <a href="/">WhatsApp</a><a href="/">Instagram</a><a href="/">X</a><a href="/">YouTube</a></div>
     </div>
@@ -215,6 +216,20 @@ function page_footer(): void
   <a href="/hata"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg><?= h(t('क्या हटा')) ?></a>
   <a href="<?= h(lang_switch_url(OTT_LANG === 'hi' ? 'en' : 'hi')) ?>"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><?= OTT_LANG === 'hi' ? 'EN' : 'हिं' ?></a>
 </nav>
+
+<?php /* cookie-consent — पहली बार दिखे, Accept पर localStorage में याद */ ?>
+<div class="cookiebar" id="cookiebar" hidden>
+  <span><?= OTT_LANG === 'hi' ? 'हम पसंद याद रखने के लिए साधारण कुकीज़ इस्तेमाल करते हैं। ' : 'We use basic cookies to remember your preferences. ' ?><a href="/privacy"><?= OTT_LANG === 'hi' ? 'निजता नीति' : 'Privacy policy' ?></a></span>
+  <button type="button" id="cookieok" class="btn-grad"><?= OTT_LANG === 'hi' ? 'ठीक है' : 'Got it' ?></button>
+</div>
+<script>
+(function(){var b=document.getElementById('cookiebar');if(!b)return;
+  try{if(localStorage.getItem('ottg_cookie'))return;}catch(e){}
+  b.hidden=false;
+  var ok=document.getElementById('cookieok');
+  ok&&ok.addEventListener('click',function(){try{localStorage.setItem('ottg_cookie','1')}catch(e){}b.hidden=true;});
+})();
+</script>
 
 <?php /* command-palette — / से या search icon से खुलता है; live poster suggestions */ ?>
 <div class="cmdk" id="cmdk" hidden role="dialog" aria-modal="true" aria-label="<?= h(t('खोजें')) ?>"
