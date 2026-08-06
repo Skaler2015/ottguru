@@ -102,6 +102,9 @@ try {
 
 // ---- auto discovery पेज: A–Z index, क्यूरेटेड सूचियाँ, साल-वार (सब DB से) ----------
 $urls[] = [$base . '/all', $aaj];
+$urls[] = [$base . '/about', $aaj];
+$urls[] = [$base . '/privacy', $aaj];
+$urls[] = [$base . '/terms', $aaj];
 foreach (['top-rated', 'hidden-gems', 'trending', 'new'] as $ls) {
     $urls[] = [$base . '/list/' . $ls, $aaj];
 }

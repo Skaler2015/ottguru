@@ -84,6 +84,19 @@ if (count($seg) === 1 && $seg[0] === 'all') {
     exit;
 }
 
+// info पेज — /about /privacy /terms
+if (count($seg) === 1 && in_array($seg[0], ['about', 'privacy', 'terms'], true)) {
+    $want_slug = $seg[0];
+    require OTT_ROOT . '/site/pages/info.php';
+    exit;
+}
+
+// संपर्क — /contact  (फ़ॉर्म → email)
+if (count($seg) === 1 && $seg[0] === 'contact') {
+    require OTT_ROOT . '/site/pages/contact.php';
+    exit;
+}
+
 // क्यूरेटेड सूची — /list/{slug}  (top-rated · hidden-gems · trending · new)
 if (count($seg) === 2 && $seg[0] === 'list' && $slug_ok($seg[1])) {
     $want_slug = $seg[1];
