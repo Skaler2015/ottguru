@@ -78,6 +78,26 @@ if (count($seg) === 1 && $seg[0] === 'compare') {
     exit;
 }
 
+// A–Z सूचकांक — /all?l=A  (deep-crawl index)
+if (count($seg) === 1 && $seg[0] === 'all') {
+    require OTT_ROOT . '/site/pages/allindex.php';
+    exit;
+}
+
+// क्यूरेटेड सूची — /list/{slug}  (top-rated · hidden-gems · trending · new)
+if (count($seg) === 2 && $seg[0] === 'list' && $slug_ok($seg[1])) {
+    $want_slug = $seg[1];
+    require OTT_ROOT . '/site/pages/curated.php';
+    exit;
+}
+
+// साल-वार — /year/{yyyy}
+if (count($seg) === 2 && $seg[0] === 'year' && preg_match('/^\d{4}$/', $seg[1]) === 1) {
+    $want_year = (int) $seg[1];
+    require OTT_ROOT . '/site/pages/year.php';
+    exit;
+}
+
 // admin dashboard — /admin  या गुप्त  /<admin_path>  (जैसे /skaler2015)।
 // दोनों admin.php पर जाते हैं, जो password login माँगता है (session में याद रहता है)।
 // गुप्त path config.php (git से बाहर) में रहता है — कोड में कभी नहीं। इस तरह

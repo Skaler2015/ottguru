@@ -100,6 +100,22 @@ try {
     // people/title_credits table अभी नहीं
 }
 
+// ---- auto discovery पेज: A–Z index, क्यूरेटेड सूचियाँ, साल-वार (सब DB से) ----------
+$urls[] = [$base . '/all', $aaj];
+foreach (['top-rated', 'hidden-gems', 'trending', 'new'] as $ls) {
+    $urls[] = [$base . '/list/' . $ls, $aaj];
+}
+// साल-वार — सिर्फ़ वे साल जिनमें ≥3 उपलब्ध titles हैं (thin नहीं)
+foreach (all($PDO, "
+    SELECT t.release_year yr, COUNT(DISTINCT t.id) n
+      FROM titles t
+      JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                         AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+     WHERE t.release_year IS NOT NULL
+     GROUP BY t.release_year HAVING n >= 3", [$country]) as $y) {
+    $urls[] = [$base . '/year/' . (int) $y['yr'], $aaj];
+}
+
 // ---- query 9: title पेज — हर वो title जो कभी किसी OTT पर रही (current या हटी) ------
 // पहले सिर्फ़ is_current=1 था — इससे "अब हटी पर इतिहास वाली" movies (हमारा असली unique
 // content) और वे जिनकी दोबारा-availability बाद में आई, Google को sitemap से पता ही नहीं
