@@ -180,9 +180,10 @@ function page_footer(): void
       </div>
       <div class="fcol"><h4><?= h(t('खोजें और देखें')) ?></h4>
         <a href="/search"><?= h(t('खोज')) ?></a>
-        <a href="/naya"><?= h(t('नया आया')) ?></a>
-        <a href="/hata"><?= h(t('क्या हटा')) ?></a>
-        <a href="/"><?= h(t('होम')) ?></a></div>
+        <a href="/browse"><?= h(t('ब्राउज़')) ?></a>
+        <a href="/list/top-rated"><?= OTT_LANG === 'hi' ? 'सबसे बढ़िया रेटिंग' : 'Top rated' ?></a>
+        <a href="/list/hidden-gems"><?= OTT_LANG === 'hi' ? 'छुपे रत्न' : 'Hidden gems' ?></a>
+        <a href="/all"><?= OTT_LANG === 'hi' ? 'सारी titles (A–Z)' : 'All titles (A–Z)' ?></a></div>
       <div class="fcol"><h4>Platforms</h4>
         <a href="/platform/netflix">Netflix</a>
         <a href="/platform/prime-video">Prime Video</a>
