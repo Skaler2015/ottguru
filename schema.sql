@@ -316,6 +316,22 @@ CREATE TABLE IF NOT EXISTS provider_audio (
 --     §7 काम-5)। यही JustWatch से असली फ़र्क़: "₹149 Mobile plan TV पर चलेगा?"
 --     admin से भरा/मिटाया जाता है; sync इसे कभी नहीं छूता।
 -- ----------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
+-- title_collections — कौन सा title किस franchise/collection का है (TMDB)।
+-- disposable मेटाडेटा (movie base response के belongs_to_collection से);
+-- sync हर बार title के लिए ताज़ा (delete+reinsert)। CASCADE on title_id।
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS title_collections (
+  title_id       INT UNSIGNED      NOT NULL,
+  collection_id  INT UNSIGNED      NOT NULL,
+  name           VARCHAR(160)      NOT NULL,
+  poster_path    VARCHAR(160)      NULL,
+  PRIMARY KEY (title_id),
+  KEY ix_tcol (collection_id),
+  CONSTRAINT fk_tcol_title FOREIGN KEY (title_id)
+    REFERENCES titles (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS provider_plans (
   id          SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
   provider_id SMALLINT UNSIGNED NOT NULL,

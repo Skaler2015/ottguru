@@ -103,6 +103,13 @@ if (count($seg) === 1 && $seg[0] === 'genres') {
     exit;
 }
 
+// collection/franchise — /collection/{id}
+if (count($seg) === 2 && $seg[0] === 'collection' && ctype_digit($seg[1])) {
+    $want_cid = (int) $seg[1];
+    require OTT_ROOT . '/site/pages/collection.php';
+    exit;
+}
+
 // क्यूरेटेड सूची — /list/{slug}  (top-rated · hidden-gems · trending · new)
 if (count($seg) === 2 && $seg[0] === 'list' && $slug_ok($seg[1])) {
     $want_slug = $seg[1];

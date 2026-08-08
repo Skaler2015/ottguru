@@ -83,6 +83,21 @@ try {
     // genres table अभी नहीं — कोई बात नहीं
 }
 
+// ---- collection/franchise पेज — ≥2 उपलब्ध titles वाले (thin नहीं) --------------
+try {
+    foreach (all($PDO, "
+        SELECT tc.collection_id, COUNT(DISTINCT t.id) n
+          FROM title_collections tc
+          JOIN titles t ON t.id = tc.title_id
+          JOIN availability a ON a.title_id = t.id AND a.is_current = 1
+                             AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+         GROUP BY tc.collection_id HAVING n >= 2", [$country]) as $cl) {
+        $urls[] = [$base . '/collection/' . (int) $cl['collection_id'], $aaj];
+    }
+} catch (Throwable $e) {
+    // title_collections table अभी नहीं
+}
+
 // ---- person पेज — सिर्फ़ ≥3 उपलब्ध titles वाले (चर्चित लोग; thin/बहुत-ज़्यादा से बचाव) --
 try {
     foreach (all($PDO, "

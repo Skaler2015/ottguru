@@ -226,14 +226,26 @@ function tmdb_extract_extra(array $d, string $mediaType): array
         }
     }
 
+    // ---- collection/franchise (movie base response में; null भी हो सकता है) ----
+    $collection = null;
+    $bc = $d['belongs_to_collection'] ?? null;
+    if (is_array($bc) && (int) ($bc['id'] ?? 0) > 0 && trim((string) ($bc['name'] ?? '')) !== '') {
+        $collection = [
+            'id'     => (int) $bc['id'],
+            'name'   => mb_substr(trim((string) $bc['name']), 0, 160),
+            'poster' => nz((string) ($bc['poster_path'] ?? '')),
+        ];
+    }
+
     return [
-        'genres'  => $genres,   // [id => name]
-        'cast'    => $cast,
-        'crew'    => $crew,
-        'videos'  => $vids,
-        'cert'    => $cert,
-        'digital' => $digital,
-        'tagline' => nz(mb_substr((string) ($d['tagline'] ?? ''), 0, 300)),
+        'genres'     => $genres,   // [id => name]
+        'cast'       => $cast,
+        'crew'       => $crew,
+        'videos'     => $vids,
+        'cert'       => $cert,
+        'digital'    => $digital,
+        'tagline'    => nz(mb_substr((string) ($d['tagline'] ?? ''), 0, 300)),
+        'collection' => $collection,
     ];
 }
 

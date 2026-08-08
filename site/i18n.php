@@ -74,6 +74,7 @@ $GLOBALS['__EN'] = [
     '%s पर'             => 'On %s',
     '%d platforms पर'   => 'On %d platforms',
     'अभी चर्चा में'       => 'Trending now',
+    '%s का हिस्सा'        => 'Part of %s',
     'सबसे बढ़िया रेटिंग'   => 'Top rated',
     'दर्शकों की रेटिंग के हिसाब से — जो अभी किसी OTT पर हैं।'
         => 'By viewer rating — titles on an OTT right now.',

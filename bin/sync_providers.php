@@ -386,6 +386,30 @@ if ($hasMeta) {
     );
 }
 
+// title_collections — meta self-heal से छूट सकती है (title_genres पहले से हो तो),
+// इसलिए अलग से पक्का करें। DDL beginTransaction से पहले (implicit-commit सुरक्षित)।
+$hasCol = false;
+$delCol = $insCol = null;
+try {
+    $hasCol = (int) scalar($PDO, "SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = 'title_collections'") > 0;
+    if (!$hasCol) {
+        $sc = (string) @file_get_contents(OTT_ROOT . '/schema.sql');
+        if (preg_match('/CREATE TABLE IF NOT EXISTS title_collections.*?;/s', $sc, $m)) {
+            $PDO->exec($m[0]);
+            $hasCol = true;
+            logline('title_collections बनाई (self-heal)');
+        }
+    }
+} catch (Throwable $e) {
+    $hasCol = false;   // न बने तो collection चुपचाप छूटेगा (बाक़ी sync सुरक्षित)
+}
+if ($hasCol) {
+    $delCol = $PDO->prepare('DELETE FROM title_collections WHERE title_id = ?');
+    $insCol = $PDO->prepare('INSERT INTO title_collections (title_id, collection_id, name, poster_path)
+                             VALUES (?, ?, ?, ?)');
+}
+
 $PDO->beginTransaction();
 try {
     foreach ($pending as $tid => $p) {
@@ -476,6 +500,16 @@ try {
             $upMeta->execute([
                 ':t' => $tid, ':c' => $ex['cert'], ':tag' => $ex['tagline'], ':d' => $ex['digital'],
             ]);
+        }
+
+        // collection/franchise — delete+reinsert (movie पर ही; TV पर null → सिर्फ़ साफ़)
+        if ($hasCol && $ex !== null) {
+            $delCol->execute([$tid]);
+            if (!empty($ex['collection'])) {
+                $insCol->execute([
+                    $tid, $ex['collection']['id'], $ex['collection']['name'], $ex['collection']['poster'],
+                ]);
+            }
         }
     }
 
