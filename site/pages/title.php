@@ -90,6 +90,12 @@ try {
     // नई tables अभी मौजूद नहीं — कोई बात नहीं, बाक़ी पन्ना ज्यों का त्यों
 }
 
+// collection/franchise (Feature 7) — table/डेटा न हो तो null
+$collection = null;
+try {
+    $collection = one($PDO, "SELECT collection_id, name FROM title_collections WHERE title_id = ?", [$tid_i]);
+} catch (Throwable $e) { /* title_collections अभी नहीं */ }
+
 // ---- dub/ऑडियो भाषा — किस OTT पर कौन सी (Streaming Availability से) ----------
 // ⚠️ यह फिल्म की भाषा (title_languages) से अलग है — CLAUDE.md §5, कभी मिलाना नहीं।
 // सिर्फ़ तभी दिखेगा जब असली डेटा भरा हो (SA चालू + परखा) — कोई झूठा दावा नहीं।
@@ -335,6 +341,14 @@ crumbs($tcrumbs);
     <div class="chips">
       <?php foreach ($genres as $g): ?><a class="chip" href="/genre/<?= h(rawurlencode($g['slug'])) ?>"><?= h($g['name_en']) ?></a><?php endforeach; ?>
     </div>
+    <?php endif; ?>
+
+    <?php if ($collection !== null):
+      $cclean = trim(preg_replace('/\s*(Collection|Series)\s*$/i', '', (string) $collection['name'])) ?: $collection['name']; ?>
+    <a class="franchise-link" href="/collection/<?= (int) $collection['collection_id'] ?>">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M7 7V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v3"/></svg>
+      <?= h(tf('%s का हिस्सा', $cclean)) ?> →
+    </a>
     <?php endif; ?>
 
     <?php if ((float) $title['vote_average'] > 0):

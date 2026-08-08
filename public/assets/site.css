@@ -687,6 +687,13 @@ a.castcard:hover .nm{color:var(--blue)}
 @media(max-width:520px){.azlist{columns:1}}
 .azlist a{display:block;padding:6px 2px;color:var(--ink2);font-size:14px;break-inside:avoid;border-bottom:1px solid var(--line)}
 .azlist a:hover{color:var(--blue)}
+/* franchise/collection link (title पेज) */
+.franchise-link{display:inline-flex;align-items:center;gap:7px;margin:2px 0 12px;padding:7px 14px;
+  border-radius:999px;font-size:13.5px;font-weight:600;color:var(--ink);
+  background:linear-gradient(var(--card2),var(--card2)) padding-box,var(--grad2) border-box;
+  border:1px solid transparent;transition:.16s}
+.franchise-link:hover{box-shadow:var(--shb);transform:translateY(-1px)}
+.franchise-link svg{color:var(--pink)}
 /* person bio (Feature 8) */
 .pbio{max-width:760px;margin:14px 0 6px;color:var(--ink2);line-height:1.75}
 .pbio p{margin:0}
