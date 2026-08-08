@@ -232,9 +232,16 @@ CREATE TABLE IF NOT EXISTS title_genres (
 -- 11. people — cast/crew मास्टर (एक व्यक्ति कई titles में; /person पेज के लिए भी)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS people (
-  id           INT UNSIGNED NOT NULL COMMENT 'TMDB person id',
-  name         VARCHAR(160) NOT NULL,
-  profile_path VARCHAR(160) NULL,
+  id            INT UNSIGNED NOT NULL COMMENT 'TMDB person id',
+  name          VARCHAR(160) NOT NULL,
+  profile_path  VARCHAR(160) NULL,
+  -- bio fields (sync_people.php से TMDB /person API द्वारा भरे जाते हैं; disposable)
+  biography     TEXT         NULL,
+  birthday      DATE         NULL,
+  deathday      DATE         NULL,
+  place_of_birth VARCHAR(200) NULL,
+  known_for     VARCHAR(60)  NULL COMMENT 'known_for_department',
+  bio_checked   DATE         NULL COMMENT 'आख़िरी बार TMDB से कब भरा',
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
