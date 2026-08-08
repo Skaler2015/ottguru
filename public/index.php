@@ -97,6 +97,12 @@ if (count($seg) === 1 && $seg[0] === 'contact') {
     exit;
 }
 
+// श्रेणी hub — /genres  (सारी श्रेणियाँ)
+if (count($seg) === 1 && $seg[0] === 'genres') {
+    require OTT_ROOT . '/site/pages/genres.php';
+    exit;
+}
+
 // क्यूरेटेड सूची — /list/{slug}  (top-rated · hidden-gems · trending · new)
 if (count($seg) === 2 && $seg[0] === 'list' && $slug_ok($seg[1])) {
     $want_slug = $seg[1];

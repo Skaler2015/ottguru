@@ -584,6 +584,30 @@ $langTitles = (int) scalar($PDO, 'SELECT COUNT(DISTINCT title_id) FROM title_lan
 $posterPct = (int) $pcov['tot'] > 0 ? round((int) $pcov['wp'] / (int) $pcov['tot'] * 100) : 0;
 $langPct   = $c['titles'] > 0 ? round($langTitles / $c['titles'] * 100) : 0;
 
+// ---- डेटा-गुणवत्ता (25) — कहाँ डेटा अधूरा है, कितने पेज index-योग्य ----
+$acountry   = $CFG['country'] ?? 'IN';
+$pct        = fn (int $x) => $c['titles'] > 0 ? (int) round($x / $c['titles'] * 100) : 0;
+$ovCov      = (int) scalar($PDO, "SELECT COUNT(*) FROM titles WHERE overview IS NOT NULL AND overview <> ''");
+$provEver   = (int) scalar($PDO, 'SELECT COUNT(DISTINCT title_id) FROM availability');
+$overviewPct = $pct($ovCov);
+$provEverPct = $pct($provEver);          // = index-योग्य (हमारा unique content वाले)
+$genrePct = $castPct = null;
+try { $genrePct = $pct((int) scalar($PDO, 'SELECT COUNT(DISTINCT title_id) FROM title_genres')); } catch (Throwable $e) {}
+try { $castPct  = $pct((int) scalar($PDO, 'SELECT COUNT(DISTINCT title_id) FROM title_credits')); } catch (Throwable $e) {}
+// पतले/noindex titles: न कभी OTT पर, न कोई भाषा-जानकारी
+$thinNoindex = (int) scalar($PDO, "SELECT COUNT(*) FROM titles t
+     WHERE NOT EXISTS (SELECT 1 FROM availability a WHERE a.title_id = t.id)
+       AND NOT EXISTS (SELECT 1 FROM title_languages l WHERE l.title_id = t.id)");
+
+// ---- top platforms (24) — अभी सबसे ज़्यादा titles किस OTT पर (bar chart) ----
+$topProv = all($PDO, "SELECT p.name AS name, COUNT(DISTINCT a.title_id) AS n
+      FROM providers p
+      JOIN availability a ON a.provider_id = p.id AND a.is_current = 1
+                         AND a.country = ? AND a.offer_type IN ('flatrate','ads','free')
+     WHERE p.is_active = 1
+     GROUP BY p.id ORDER BY n DESC LIMIT 8", [$acountry]);
+$topProvMax = $topProv !== [] ? max(array_map(fn ($r) => (int) $r['n'], $topProv)) : 1;
+
 // last run per job + recent runs
 $lastCat  = one($PDO, "SELECT * FROM sync_runs WHERE job='catalog'   ORDER BY id DESC LIMIT 1");
 $lastProv = one($PDO, "SELECT * FROM sync_runs WHERE job='providers' ORDER BY id DESC LIMIT 1");
@@ -757,26 +781,49 @@ $runcell = function (?array $r) use ($e): string {
     </div>
   </div>
 
-  <!-- coverage + queue -->
+  <!-- coverage + data quality (25) -->
   <div class="panel">
-    <div class="ph"><h3>Coverage &amp; queue</h3><span class="t">डेटा की गुणवत्ता</span></div>
+    <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'डेटा-गुणवत्ता' : 'Data quality' ?></h3><span class="t"><?= OTT_LANG === 'hi' ? 'कहाँ अधूरा है' : "what's missing" ?></span></div>
     <div class="cov">
-      <div>
-        <div class="lbl"><span>Poster coverage</span><b><?= $posterPct ?>%</b></div>
-        <div class="covbar"><i style="width:<?= $posterPct ?>%"></i></div>
-      </div>
-      <div>
-        <div class="lbl"><span>भाषा coverage</span><b><?= $langPct ?>%</b></div>
-        <div class="covbar"><i style="width:<?= $langPct ?>%"></i></div>
-      </div>
+      <?php
+      $covRow = function (string $label, $p) {
+          $p = (int) $p;
+          $col = $p >= 80 ? 'var(--good)' : ($p >= 40 ? 'var(--warn)' : 'var(--pink)');
+          echo '<div><div class="lbl"><span>' . htmlspecialchars($label, ENT_QUOTES) . '</span><b>' . $p . '%</b></div>'
+             . '<div class="covbar"><i style="width:' . $p . '%;background:' . $col . '"></i></div></div>';
+      };
+      $L2 = OTT_LANG === 'hi';
+      $covRow($L2 ? 'OTT पर कभी (index-योग्य)' : 'On OTT ever (indexable)', $provEverPct);
+      $covRow('Poster', $posterPct);
+      $covRow($L2 ? 'कहानी (overview)' : 'Overview', $overviewPct);
+      $covRow($L2 ? 'भाषा' : 'Language', $langPct);
+      if ($genrePct !== null) { $covRow('Genre', $genrePct); }
+      if ($castPct !== null)  { $covRow('Cast', $castPct); }
+      ?>
     </div>
     <table class="atable" style="margin-top:18px">
-      <tr><td>कभी नहीं जाँचे titles</td><td class="n" <?= $c['never'] > 0 ? 'style="color:var(--warn)"' : '' ?>><?= $nf($c['never']) ?></td></tr>
-      <tr><td>लगातार विफल (fail-streak ≥ 3)</td><td class="n" <?= $c['failing'] > 0 ? 'style="color:var(--pink)"' : '' ?>><?= $nf($c['failing']) ?></td></tr>
-      <tr><td>बिना poster titles</td><td class="n"><?= $nf((int) $pcov['tot'] - (int) $pcov['wp']) ?></td></tr>
+      <tr><td><?= $L2 ? 'पतले पेज (noindex — न OTT, न भाषा)' : 'Thin pages (noindex)' ?></td><td class="n" <?= $thinNoindex > 0 ? 'style="color:var(--pink)"' : '' ?>><?= $nf($thinNoindex) ?></td></tr>
+      <tr><td><?= $L2 ? 'कभी नहीं जाँचे titles' : 'Never checked' ?></td><td class="n" <?= $c['never'] > 0 ? 'style="color:var(--warn)"' : '' ?>><?= $nf($c['never']) ?></td></tr>
+      <tr><td><?= $L2 ? 'लगातार विफल (streak ≥ 3)' : 'Failing (streak ≥ 3)' ?></td><td class="n" <?= $c['failing'] > 0 ? 'style="color:var(--pink)"' : '' ?>><?= $nf($c['failing']) ?></td></tr>
     </table>
+    <p class="dim small" style="margin:10px 0 0"><?= $L2 ? 'ये % जितने ऊँचे, उतने ज़्यादा पेज Google पर index-योग्य। providers-sync चलने पर बढ़ते हैं।' : 'Higher % = more index-worthy pages. They rise as the providers sync runs.' ?></p>
   </div>
 </div>
+
+<!-- top platforms (24) -->
+<?php if ($topProv !== []): ?>
+<div class="panel" style="margin-top:16px">
+  <div class="ph"><h3><?= OTT_LANG === 'hi' ? 'टॉप platforms — अभी उपलब्ध titles' : 'Top platforms — titles available now' ?></h3><span class="t"><?= OTT_LANG === 'hi' ? 'सब्सक्रिप्शन/मुफ़्त' : 'sub/free' ?></span></div>
+  <div class="bars">
+    <?php foreach ($topProv as $r): ?>
+    <?php $rn = (int) ($r['n'] ?? 0); ?>
+    <div class="barrow"><span class="nm"><?= $e($r['name']) ?></span>
+      <span class="track"><span class="fill" style="width:<?= (int) round($rn / $topProvMax * 100) ?>%"></span></span>
+      <span class="val"><?= $nf($rn) ?></span></div>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
 
 <!-- growth chart -->
 <div class="panel" style="margin-top:16px">
