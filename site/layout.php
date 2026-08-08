@@ -130,6 +130,7 @@ function page_header(array $opt = []): void
           <div class="mega-col">
             <div class="mega-h"><?= OTT_LANG === 'hi' ? 'श्रेणियाँ' : 'Genres' ?></div>
             <?php foreach ($mega['genres'] as $g): ?><a role="menuitem" href="/genre/<?= h(rawurlencode($g['slug'])) ?>"><?= h($g['name_en']) ?><span class="mn"><?= (int) $g['n'] ?></span></a><?php endforeach; ?>
+            <a class="mega-all" href="/genres"><?= OTT_LANG === 'hi' ? 'सभी श्रेणियाँ →' : 'All genres →' ?></a>
           </div>
           <?php endif; ?>
           <?php if ($mega['platforms'] !== []): ?>

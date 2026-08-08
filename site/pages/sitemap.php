@@ -102,6 +102,7 @@ try {
 
 // ---- auto discovery पेज: A–Z index, क्यूरेटेड सूचियाँ, साल-वार (सब DB से) ----------
 $urls[] = [$base . '/all', $aaj];
+$urls[] = [$base . '/genres', $aaj];
 $urls[] = [$base . '/about', $aaj];
 $urls[] = [$base . '/privacy', $aaj];
 $urls[] = [$base . '/terms', $aaj];
