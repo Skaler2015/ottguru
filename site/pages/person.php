@@ -67,6 +67,19 @@ $canon   = person_url($person);
 
 $desc = tf('%s की वे फिल्में और वेब सीरीज़ जो अभी भारत में OTT पर उपलब्ध हैं — कहाँ देखें, किस platform पर। रोज़ अपडेट, OTT गुरु पर।', $pname);
 
+// bio fields (sync_people.php से; columns/डेटा न हों तो सब null — पेज ज्यों का त्यों)
+$bio  = nz($person['biography'] ?? null);
+$bday = nz($person['birthday'] ?? null);
+$dday = nz($person['deathday'] ?? null);
+$pob  = nz($person['place_of_birth'] ?? null);
+$kfor = nz($person['known_for'] ?? null);
+$age  = null;
+if ($bday !== null) {
+    $end = $dday !== null ? strtotime($dday) : time();
+    $age = $end !== false ? (int) floor(($end - (int) strtotime($bday)) / 31557600) : null;
+}
+$hasFacts = $bday !== null || $pob !== null || $kfor !== null;
+
 $crumbs = [
     ['name' => OTT_LANG === 'hi' ? 'होम' : 'Home', 'url' => '/'],
     ['name' => $pname, 'url' => $canon],
@@ -80,12 +93,16 @@ page_header([
     'noindex'     => $total < 2,   // बहुत पतला हो तो index नहीं
     'breadcrumb'  => $crumbs,
     'jsonld'      => array_filter([
-        '@context' => 'https://schema.org',
-        '@type'    => 'Person',
-        'name'     => $pname,
-        'url'      => 'https://ottguru.in' . $canon,
-        'image'    => $photo,
-        'jobTitle' => $roleStr !== '' ? $roleStr : null,
+        '@context'    => 'https://schema.org',
+        '@type'       => 'Person',
+        'name'        => $pname,
+        'url'         => 'https://ottguru.in' . $canon,
+        'image'       => $photo,
+        'jobTitle'    => $roleStr !== '' ? $roleStr : null,
+        'description' => $bio !== null ? mb_substr($bio, 0, 300, 'UTF-8') : null,
+        'birthDate'   => $bday,
+        'deathDate'   => $dday,
+        'birthPlace'  => $pob,
     ]),
 ]);
 crumbs($crumbs);
@@ -104,6 +121,29 @@ crumbs($crumbs);
     </div>
   </div>
 </div>
+
+<?php if ($hasFacts): ?>
+<div class="badges" style="margin:14px 0 4px">
+  <?php if ($kfor !== null): ?><span class="badge"><?= h($kfor) ?></span><?php endif; ?>
+  <?php if ($bday !== null): ?><span class="badge"><?= OTT_LANG === 'hi' ? 'जन्म' : 'Born' ?> <?= h(hindi_date($bday)) ?><?= $age !== null && $dday === null ? ' · ' . (OTT_LANG === 'hi' ? $age . ' साल' : $age . ' yrs') : '' ?></span><?php endif; ?>
+  <?php if ($dday !== null): ?><span class="badge"><?= OTT_LANG === 'hi' ? 'निधन' : 'Died' ?> <?= h(hindi_date($dday)) ?></span><?php endif; ?>
+  <?php if ($pob !== null): ?><span class="badge"><?= h($pob) ?></span><?php endif; ?>
+</div>
+<?php endif; ?>
+
+<?php if ($bio !== null): ?>
+<?php $long = mb_strlen($bio, 'UTF-8') > 420; ?>
+<div class="pbio">
+  <?php if ($long): ?>
+    <details>
+      <summary><?= h(mb_substr($bio, 0, 380, 'UTF-8')) ?>… <span class="more"><?= OTT_LANG === 'hi' ? 'और पढ़ें' : 'Read more' ?></span></summary>
+      <p><?= nl2br(h($bio)) ?></p>
+    </details>
+  <?php else: ?>
+    <p><?= nl2br(h($bio)) ?></p>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php if ($asActor !== []): ?>
 <h2><?= h(OTT_LANG === 'hi' ? 'बतौर अभिनेता — अभी OTT पर' : 'As actor — on OTT now') ?></h2>
